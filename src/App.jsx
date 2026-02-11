@@ -6,6 +6,18 @@ const App = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const scrollerRef = useRef(null);
 
+  // Generate stars once and keep them constant
+  const [stars] = useState(() => 
+    [...Array(100)].map(() => ({
+      size: Math.random() * 2 + 1,
+      top: Math.random() * 100,
+      left: Math.random() * 100,
+      opacity: Math.random() * 0.5 + 0.3,
+      animationDelay: Math.random() * 3,
+      animationDuration: Math.random() * 2 + 2
+    }))
+  );
+
   // Planet data with real relative diameters (km)
   const planets = [
     { name: 'Mercury', diameter: 4879, color: '#8C7853', fact: 'Smallest planet, but has the most eccentric orbit' },
@@ -69,11 +81,44 @@ const App = () => {
   // Calculate opacity for title fade out (step 0)
   const titleOpacity = currentStep === 0 ? 1 - scrollProgress : 0;
   
-  // Calculate opacity for content fade in - only after title is completely gone
-  const contentOpacity = currentStep === 0 ? 0 : 1;
+  // Calculate opacity for content fade in - starts fading in at 50% through title fade
+  const contentOpacity = currentStep === 0 ? Math.max(0, (scrollProgress - 0.5) / 0.5) : 1;
+  
+  // Calculate vertical offset for Earth and Moon rising from bottom
+  const earthMoonOffset = currentStep === 0 ? (1 - Math.max(0, (scrollProgress - 0.5) / 0.5)) * 100 : 0;
 
   return (
     <div className="relative bg-black text-white">
+      {/* Stationary star background for entire experience */}
+      <div className="fixed inset-0 z-0">
+        {stars.map((star, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-white animate-twinkle"
+            style={{
+              width: star.size + 'px',
+              height: star.size + 'px',
+              top: star.top + '%',
+              left: star.left + '%',
+              opacity: star.opacity,
+              animationDelay: star.animationDelay + 's',
+              animationDuration: star.animationDuration + 's'
+            }}
+          />
+        ))}
+      </div>
+
+      <style jsx>{`
+        @keyframes twinkle {
+          0%, 100% { opacity: var(--star-opacity); }
+          50% { opacity: 0.1; }
+        }
+        .animate-twinkle {
+          --star-opacity: ${stars[0]?.opacity || 0.5};
+          animation: twinkle ease-in-out infinite;
+        }
+      `}</style>
+
       {/* Fixed header with stats - only show after scrolling past title */}
       {false && currentStep > 0 && (
         <div 
@@ -97,7 +142,7 @@ const App = () => {
         className="fixed inset-0 flex items-center justify-center pointer-events-none z-30 transition-opacity duration-500"
         style={{ opacity: titleOpacity }}
       >
-        <div className="text-center">
+        <div className="text-center relative z-10">
           <h1 className="text-6xl font-bold mb-4 text-white">The Distance Between</h1>
           <p className="text-lg text-gray-400">by Aspen Tabar</p>
           <div className="mt-16 text-4xl text-gray-500 animate-bounce">
@@ -105,6 +150,12 @@ const App = () => {
           </div>
         </div>
       </div>
+
+      {/* Fixed horizontal line that fades in */}
+      <div 
+        className="fixed top-1/2 left-0 right-0 h-px bg-gray-700 z-5 transition-opacity duration-1000"
+        style={{ opacity: contentOpacity }}
+      />
 
       {/* Scroll steps */}
       <div ref={scrollerRef} className="relative">
@@ -120,11 +171,13 @@ const App = () => {
           >
             <div className="relative w-full h-full flex items-center justify-center">
               {/* Earth */}
-              {currentStep > 0 && (
-                <div 
-                  className="absolute left-20 flex flex-col items-center transition-transform duration-500"
-                  style={{ transform: `scale(${scaleFactor})` }}
-                >
+              <div 
+                className="absolute left-20 flex flex-col items-center transition-all duration-1000"
+                style={{ 
+                  transform: `scale(${scaleFactor}) translateY(${earthMoonOffset}vh)`,
+                  opacity: contentOpacity
+                }}
+              >
                   <div 
                     className="rounded-full bg-blue-500 shadow-lg"
                     style={{ 
@@ -138,7 +191,6 @@ const App = () => {
                     <div className="text-gray-400">{earthDiameter.toLocaleString()} km</div>
                   </div>
                 </div>
-              )}
 
               {/* Planets in between */}
               <div 
@@ -180,11 +232,13 @@ const App = () => {
               </div>
 
               {/* Moon */}
-              {currentStep > 0 && (
-                <div 
-                  className="absolute right-20 flex flex-col items-center transition-transform duration-500"
-                  style={{ transform: `scale(${scaleFactor})` }}
-                >
+              <div 
+                className="absolute right-20 flex flex-col items-center transition-all duration-1000"
+                style={{ 
+                  transform: `scale(${scaleFactor}) translateY(${earthMoonOffset}vh)`,
+                  opacity: contentOpacity
+                }}
+              >
                   <div 
                     className="rounded-full bg-gray-300 shadow-lg"
                     style={{ 
@@ -198,12 +252,8 @@ const App = () => {
                     <div className="text-gray-400">{moonDiameter.toLocaleString()} km</div>
                   </div>
                 </div>
-              )}
 
-              {/* Connection line */}
-              {currentStep > 0 && (
-                <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-700 -z-10" />
-              )}
+              {/* Connection line - removed, now fixed outside */}
             </div>
 
             {/* Current planet fact */}
