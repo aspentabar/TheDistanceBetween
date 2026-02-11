@@ -55,11 +55,10 @@ const App = () => {
   }, []);
 
   // Calculate visible planets based on current step (step 0 is title, step 1+ are planets)
-  const visiblePlanets = currentStep > 1 ? planets.slice(0, currentStep - 1) : [];
+  const visiblePlanets = [];
   
-  // Calculate scale factor
-  const totalSteps = planets.length + 1;
-  const scaleFactor = Math.max(0.15, 1 - (currentStep / totalSteps) * 0.85);
+  // Calculate scale factor - keep constant since no planets
+  const scaleFactor = 1;
   
   // Calculate total diameter of all visible planets
   const totalPlanetDiameter = visiblePlanets.reduce((sum, p) => sum + p.diameter, 0);
@@ -206,8 +205,8 @@ const App = () => {
               )}
             </div>
 
-            {/* Current planet fact */}
-            {currentStep > 1 && currentStep <= planets.length + 1 && (
+            {/* Current planet fact - hidden */}
+            {false && currentStep > 1 && currentStep <= planets.length + 1 && (
               <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 text-center bg-black bg-opacity-80 p-6 rounded-lg max-w-lg border border-gray-700">
                 <div className="text-2xl font-bold mb-2">{planets[currentStep - 2].name}</div>
                 <div className="text-gray-300 italic">{planets[currentStep - 2].fact}</div>
@@ -218,31 +217,9 @@ const App = () => {
           {/* Introduction step - Step 1 */}
           <div className="step h-screen" />
 
-          {/* Planet steps */}
-          {planets.map((planet, idx) => (
-            <div key={planet.name} className="step h-screen" />
-          ))}
+          {/* Planet steps - removed */}
 
-          {/* Final step */}
-          <div className="step h-screen flex items-center justify-center">
-            {currentStep === planets.length + 2 && (
-              <div className="text-center max-w-2xl p-8 bg-black bg-opacity-70 rounded-lg">
-                <h2 className="text-4xl font-bold mb-4">Mind = Blown! 🌍🪐🌕</h2>
-                <p className="text-xl text-gray-300 mb-4">
-                  All 8 planets (plus Pluto) fit between Earth and the Moon with room to spare!
-                </p>
-                <p className="text-2xl text-yellow-400 font-bold">
-                  The Moon is {actualDistance.toLocaleString()} km away
-                </p>
-                <button 
-                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                  className="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold transition-colors"
-                >
-                  ↑ Experience Again
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Final step - removed */}
         </div>
       </div>
     </div>
