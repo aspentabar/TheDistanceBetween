@@ -172,10 +172,12 @@ const App = () => {
             <div className="relative w-full h-full flex items-center justify-center">
               {/* Earth */}
               <div 
-                className="absolute left-20 flex flex-col items-center transition-all duration-1000"
+                className="absolute left-1/3 flex flex-col items-center transition-all duration-1000"
                 style={{ 
-                  transform: `scale(${scaleFactor}) translateY(${earthMoonOffset}vh)`,
-                  opacity: contentOpacity
+                  transform: `scale(${scaleFactor * 2}) translateY(${earthMoonOffset}vh)`,
+                  opacity: contentOpacity,
+                  top: '51%',
+                  marginTop: `-${earthDiameter / 200}px`
                 }}
               >
                   <div 
@@ -192,7 +194,8 @@ const App = () => {
                   </div>
                 </div>
 
-              {/* Planets in between */}
+              {/* Planets in between - COMMENTED OUT FOR NOW */}
+              {false && (
               <div 
                 className="absolute flex items-center gap-4 transition-transform duration-500"
                 style={{ 
@@ -230,13 +233,16 @@ const App = () => {
                   );
                 })}
               </div>
+              )}
 
               {/* Moon */}
               <div 
-                className="absolute right-20 flex flex-col items-center transition-all duration-1000"
+                className="absolute right-1/3 flex flex-col items-center transition-all duration-1000"
                 style={{ 
-                  transform: `scale(${scaleFactor}) translateY(${earthMoonOffset}vh)`,
-                  opacity: contentOpacity
+                  transform: `scale(${scaleFactor * 2}) translateY(${earthMoonOffset}vh)`,
+                  opacity: contentOpacity,
+                  top: '52%',
+                  marginTop: `-${moonDiameter / 200}px`
                 }}
               >
                   <div 
@@ -254,6 +260,29 @@ const App = () => {
                 </div>
 
               {/* Connection line - removed, now fixed outside */}
+
+              {/* Dashed line that appears after second text box settles */}
+              {currentStep === 1 && scrollProgress > 0.5 && (
+                <div className="absolute top-1/2 left-1/3 -z-10" style={{ width: '33.33vw' }}>
+                  <svg 
+                    style={{
+                      width: '100%',
+                      height: '2px',
+                      overflow: 'visible'
+                    }}
+                  >
+                    <line
+                      x1="0"
+                      y1="0"
+                      x2={`${Math.min((scrollProgress - 0.5) * 200, 100)}%`}
+                      y2="0"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeDasharray="10 10"
+                    />
+                  </svg>
+                </div>
+              )}
             </div>
 
             {/* Current planet fact */}
@@ -262,6 +291,39 @@ const App = () => {
                 <div className="text-2xl font-bold mb-2">{planets[currentStep - 2].name}</div>
                 <div className="text-gray-300 italic">{planets[currentStep - 2].fact}</div>
               </div>
+            )}
+
+            {/* Info text that appears after Earth and Moon are positioned */}
+            {currentStep === 1 && (
+              <>
+                {/* First text box */}
+                <div 
+                  className="absolute left-1/2 transform -translate-x-1/2 text-center"
+                  style={{ 
+                    bottom: `${Math.min(scrollProgress * 160, 80)}%`,
+                    transition: 'bottom 0.1s linear'
+                  }}
+                >
+                  <div className="text-sm font-bold text-white bg-gray-800 bg-opacity-80 p-4 rounded-lg border border-gray-600" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                    This is the Earth and this is the Moon.
+                  </div>
+                </div>
+
+                {/* Second text box */}
+                {scrollProgress >= 0.5 && (
+                  <div 
+                    className="absolute left-1/2 transform -translate-x-1/2 text-center"
+                    style={{ 
+                      bottom: `${Math.min((scrollProgress - 0.5) * 60, 10)}%`,
+                      transition: 'bottom 0.1s linear'
+                    }}
+                  >
+                    <div className="text-sm font-bold text-white bg-gray-800 bg-opacity-80 p-4 rounded-lg border border-gray-600" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                      But this distance between them doesn't seem right.<br/>Really, how far are they?
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
