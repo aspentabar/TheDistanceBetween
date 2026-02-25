@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import scrollama from 'scrollama';
+import earthImage from './assets/earth.png';
+import moonImage from './assets/moon.png';
 
 const App = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -139,7 +141,7 @@ const App = () => {
 
       {/* Fixed title screen that fades out */}
       <div 
-        className="fixed inset-0 flex items-center justify-center pointer-events-none z-30 transition-opacity duration-500"
+        className="fixed inset-0 flex items-center justify-center pointer-events-none z-40 transition-opacity duration-500"
         style={{ opacity: titleOpacity }}
       >
         <div className="text-center relative z-10">
@@ -180,12 +182,14 @@ const App = () => {
                   marginTop: `-${earthDiameter / 200}px`
                 }}
               >
-                  <div 
-                    className="rounded-full bg-blue-500 shadow-lg"
+                  <img 
+                    src={earthImage}
+                    alt="Earth"
+                    className="rounded-full shadow-lg"
                     style={{ 
                       width: `${earthDiameter / 100}px`, 
                       height: `${earthDiameter / 100}px`,
-                      background: 'radial-gradient(circle at 30% 30%, #4A90E2, #1E3A8A)'
+                      objectFit: 'cover'
                     }}
                   />
                   <div className="text-xs mt-2 text-center">
@@ -245,12 +249,14 @@ const App = () => {
                   marginTop: `-${moonDiameter / 200}px`
                 }}
               >
-                  <div 
-                    className="rounded-full bg-gray-300 shadow-lg"
+                  <img 
+                    src={moonImage}
+                    alt="Moon"
+                    className="rounded-full shadow-lg"
                     style={{ 
                       width: `${moonDiameter / 100}px`, 
                       height: `${moonDiameter / 100}px`,
-                      background: 'radial-gradient(circle at 40% 30%, #E0E0E0, #757575)'
+                      objectFit: 'cover'
                     }}
                   />
                   <div className="text-xs mt-2 text-center">
@@ -296,30 +302,47 @@ const App = () => {
             {/* Info text that appears after Earth and Moon are positioned */}
             {currentStep === 1 && (
               <>
-                {/* First text box */}
-                <div 
-                  className="absolute left-1/2 transform -translate-x-1/2 text-center"
-                  style={{ 
-                    bottom: `${Math.min(scrollProgress * 160, 80)}%`,
-                    transition: 'bottom 0.1s linear'
-                  }}
-                >
-                  <div className="text-sm font-bold text-white bg-gray-800 bg-opacity-80 p-4 rounded-lg border border-gray-600" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                    This is the Earth and this is the Moon.
-                  </div>
-                </div>
-
-                {/* Second text box */}
-                {scrollProgress >= 0.5 && (
+                {/* First text box - scrolls from bottom to top and exits */}
+                {scrollProgress < 0.6 && (
                   <div 
                     className="absolute left-1/2 transform -translate-x-1/2 text-center"
                     style={{ 
-                      bottom: `${Math.min((scrollProgress - 0.5) * 60, 10)}%`,
+                      bottom: `${scrollProgress * 200 - 20}%`,
                       transition: 'bottom 0.1s linear'
                     }}
                   >
-                    <div className="text-sm font-bold text-white bg-gray-800 bg-opacity-80 p-4 rounded-lg border border-gray-600" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                      But this distance between them doesn't seem right.<br/>Really, how far are they?
+                    <div className="text-sm font-bold text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700">
+                      This is the Earth and this is the Moon to scale.
+                    </div>
+                  </div>
+                )}
+
+                {/* Second text box - appears after first exits, stops at 80% */}
+                {scrollProgress >= 0.6 && (
+                  <div 
+                    className="absolute left-1/2 transform -translate-x-1/2 text-center"
+                    style={{ 
+                      bottom: scrollProgress < 0.75 ? `${(scrollProgress - 0.6) * 533.33}%` : '80%',
+                      transition: 'bottom 0.1s linear'
+                    }}
+                  >
+                    <div className="text-sm font-bold text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700">
+                      But the actual distance between them is not quite right.
+                    </div>
+                  </div>
+                )}
+
+                {/* Third text box - appears only after second completely stops */}
+                {scrollProgress >= 0.75 && (
+                  <div 
+                    className="absolute left-1/2 transform -translate-x-1/2 text-center"
+                    style={{ 
+                      bottom: `${Math.max(0, Math.min((scrollProgress - 0.75) * 60, 15))}%`,
+                      transition: 'bottom 0.1s linear'
+                    }}
+                  >
+                    <div className="text-sm font-bold text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700">
+                      Let's stretch this to the real distance.
                     </div>
                   </div>
                 )}
@@ -328,15 +351,15 @@ const App = () => {
           </div>
 
           {/* Introduction step - Step 1 */}
-          <div className="step h-screen" />
+          <div className="step" style={{ height: '200vh' }} />
 
           {/* Planet steps */}
           {planets.map((planet, idx) => (
-            <div key={planet.name} className="step h-screen" />
+            <div key={planet.name} className="step" style={{ height: '200vh' }} />
           ))}
 
           {/* Final step */}
-          <div className="step h-screen flex items-center justify-center">
+          <div className="step flex items-center justify-center" style={{ height: '200vh' }}>
             {currentStep === planets.length + 2 && (
               <div className="text-center max-w-2xl p-8 bg-black bg-opacity-70 rounded-lg">
                 <h2 className="text-4xl font-bold mb-4">Mind = Blown! 🌍🪐🌕</h2>
