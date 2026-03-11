@@ -2,6 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import scrollama from 'scrollama';
 import earthImage from './assets/earth.png';
 import moonImage from './assets/moon.png';
+import mercuryImage from './assets/mercury.png';
+import venusImage from './assets/venus.png';
+import marsImage from './assets/mars.png';
+import jupiterImage from './assets/jupiter.png';
+import saturnImage from './assets/saturn.png';
+import uranusImage from './assets/uranus.png';
+import neptuneImage from './assets/neptune.png';
 
 const App = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -22,14 +29,13 @@ const App = () => {
 
   // Planet data with real relative diameters (km)
   const planets = [
-    { name: 'Mercury', diameter: 4879, color: '#8C7853', fact: 'Smallest planet, but has the most eccentric orbit' },
-    { name: 'Venus', diameter: 12104, color: '#FFC649', fact: 'Hottest planet with surface temps over 450°C' },
-    { name: 'Mars', diameter: 6779, color: '#CD5C5C', fact: 'Home to the largest volcano in our solar system' },
-    { name: 'Jupiter', diameter: 139820, color: '#DAA520', fact: 'So massive it could fit all other planets inside' },
-    { name: 'Saturn', diameter: 116460, color: '#F4A460', fact: 'Has 146 known moons - more than any other planet' },
-    { name: 'Uranus', diameter: 50724, color: '#4FD0E0', fact: 'Rotates on its side at a 98° angle' },
-    { name: 'Neptune', diameter: 49244, color: '#4169E1', fact: 'Has winds reaching 2,100 km/h - fastest in solar system' },
-    { name: 'Pluto', diameter: 2376, color: '#DEB887', fact: 'Still our favorite dwarf planet ♥' }
+    { name: 'Mercury', diameter: 4879, color: '#8C7853', image: mercuryImage },
+    { name: 'Venus', diameter: 12104, color: '#FFC649', image: venusImage },
+    { name: 'Mars', diameter: 6779, color: '#CD5C5C', image: marsImage },
+    { name: 'Jupiter', diameter: 139820, color: '#DAA520', image: jupiterImage },
+    { name: 'Saturn', diameter: 116460, color: '#F4A460', image: saturnImage },
+    { name: 'Uranus', diameter: 50724, color: '#4FD0E0', image: uranusImage },
+    { name: 'Neptune', diameter: 49244, color: '#4169E1', image: neptuneImage }
   ];
 
   // Earth and Moon data
@@ -198,13 +204,13 @@ const App = () => {
                   </div>
                 </div>
 
-              {/* Planets in between - COMMENTED OUT FOR NOW */}
-              {false && (
+              {/* Planets in between */}
               <div 
                 className="absolute flex items-center gap-4 transition-transform duration-500"
                 style={{ 
                   left: '50%',
-                  transform: `translateX(-50%) scale(${scaleFactor})`
+                  top: '51%',
+                  transform: `translateX(-50%) translateY(-50%) scale(${scaleFactor})`
                 }}
               >
                 {visiblePlanets.map((planet, idx) => {
@@ -225,10 +231,22 @@ const App = () => {
                         className="rounded-full shadow-lg"
                         style={{ 
                           width: `${planet.diameter / 100}px`, 
-                          height: `${planet.diameter / 100}px`,
-                          backgroundColor: planet.color
+                          height: `${planet.diameter / 100}px`
                         }}
-                      />
+                      >
+                        {planet.image && (
+                          <img 
+                            src={planet.image}
+                            alt={planet.name}
+                            className="rounded-full"
+                            style={{ 
+                              width: '100%', 
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        )}
+                      </div>
                       <div className="text-xs mt-2 text-center whitespace-nowrap">
                         <div className="font-bold">{planet.name}</div>
                         <div className="text-gray-400">{planet.diameter.toLocaleString()} km</div>
@@ -237,7 +255,6 @@ const App = () => {
                   );
                 })}
               </div>
-              )}
 
               {/* Moon */}
               <div 
@@ -291,8 +308,8 @@ const App = () => {
               )}
             </div>
 
-            {/* Current planet fact */}
-            {currentStep > 1 && currentStep <= planets.length + 1 && (
+            {/* Current planet fact - removed */}
+            {false && currentStep > 1 && currentStep <= planets.length + 1 && (
               <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 text-center bg-black bg-opacity-80 p-6 rounded-lg max-w-lg border border-gray-700">
                 <div className="text-2xl font-bold mb-2">{planets[currentStep - 2].name}</div>
                 <div className="text-gray-300 italic">{planets[currentStep - 2].fact}</div>
@@ -303,11 +320,11 @@ const App = () => {
             {currentStep === 1 && (
               <>
                 {/* First text box - scrolls from bottom to top and exits */}
-                {scrollProgress < 0.6 && (
+                {scrollProgress < 0.5 && (
                   <div 
                     className="absolute left-1/2 transform -translate-x-1/2 text-center"
                     style={{ 
-                      bottom: `${scrollProgress * 200 - 20}%`,
+                      bottom: `${scrollProgress * 240 - 20}%`,
                       transition: 'bottom 0.1s linear'
                     }}
                   >
@@ -318,11 +335,11 @@ const App = () => {
                 )}
 
                 {/* Second text box - appears after first exits, stops at 80% */}
-                {scrollProgress >= 0.6 && (
+                {scrollProgress >= 0.5 && (
                   <div 
                     className="absolute left-1/2 transform -translate-x-1/2 text-center"
                     style={{ 
-                      bottom: scrollProgress < 0.75 ? `${(scrollProgress - 0.6) * 533.33}%` : '80%',
+                      bottom: scrollProgress < 0.9 ? `${(scrollProgress - 0.5) * 200 - 20}%` : '80%',
                       transition: 'bottom 0.1s linear'
                     }}
                   >
@@ -333,12 +350,11 @@ const App = () => {
                 )}
 
                 {/* Third text box - appears only after second completely stops */}
-                {scrollProgress >= 0.75 && (
+                {scrollProgress >= 0.88 && (
                   <div 
                     className="absolute left-1/2 transform -translate-x-1/2 text-center"
                     style={{ 
-                      bottom: `${Math.max(0, Math.min((scrollProgress - 0.75) * 60, 15))}%`,
-                      transition: 'bottom 0.1s linear'
+                      bottom: `${(scrollProgress - 0.88) * 67}%`
                     }}
                   >
                     <div className="text-sm font-bold text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700">
