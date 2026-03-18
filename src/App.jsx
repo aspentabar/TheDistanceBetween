@@ -10,13 +10,30 @@ import saturnImage from './assets/saturn.png';
 import uranusImage from './assets/uranus.png';
 import neptuneImage from './assets/neptune.png';
 
+const PlanetLabel = ({ name, diameter, scale, above }) => (
+  <div
+    className="absolute left-1/2 text-center whitespace-nowrap"
+    style={{
+      transform: `translateX(-50%) scale(${1 / scale})`,
+      transformOrigin: above ? 'bottom center' : 'top center',
+      ...(above
+        ? { bottom: '100%', marginBottom: '8px' }
+        : { top: '100%', marginTop: '8px' }),
+    }}
+  >
+    <div className="font-bold text-sm">{name}</div>
+    <div className="text-gray-400 text-xs">{diameter.toLocaleString()} km</div>
+  </div>
+);
+
 const App = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const scrollerRef = useRef(null);
+  const justEnteredRef = useRef(false);
 
   // Generate stars once and keep them constant
-  const [stars] = useState(() => 
+  const [stars] = useState(() =>
     [...Array(100)].map(() => ({
       size: Math.random() * 2 + 1,
       top: Math.random() * 100,
@@ -29,22 +46,30 @@ const App = () => {
 
   // Planet data with real relative diameters (km)
   const planets = [
-    { name: 'Mercury', diameter: 4879, color: '#8C7853', image: mercuryImage },
-    { name: 'Venus', diameter: 12104, color: '#FFC649', image: venusImage },
-    { name: 'Mars', diameter: 6779, color: '#CD5C5C', image: marsImage },
-    { name: 'Jupiter', diameter: 139820, color: '#DAA520', image: jupiterImage },
-    { name: 'Saturn', diameter: 116460, color: '#F4A460', image: saturnImage },
-    { name: 'Uranus', diameter: 50724, color: '#4FD0E0', image: uranusImage },
-    { name: 'Neptune', diameter: 49244, color: '#4169E1', image: neptuneImage }
+    { name: 'Mercury', diameter: 4879, image: mercuryImage },
+    { name: 'Venus', diameter: 12104, image: venusImage },
+    { name: 'Mars', diameter: 6779, image: marsImage },
+    { name: 'Jupiter', diameter: 139820, image: jupiterImage },
+    { name: 'Saturn', diameter: 116460, image: saturnImage },
+    { name: 'Uranus', diameter: 50724, image: uranusImage },
+    { name: 'Neptune', diameter: 49244, image: neptuneImage }
   ];
 
   // Earth and Moon data
   const earthDiameter = 12742;
   const moonDiameter = 3474;
-  const actualDistance = 384400; // km
+
+
+  // Dashed line geometry — derived from constants, computed once per render outside JSX
+  const KM_PER_PX = 65; // lower = larger everything, relative scale stays the same
+  const ROW_GAP_PX = 8; // matches gap-2
+  const earthPx = earthDiameter / KM_PER_PX;
+  const moonPx = moonDiameter / KM_PER_PX;
+  const dashEarthCX = earthPx / 2;
+  const dashMoonCX = earthPx + ROW_GAP_PX + moonPx / 2;
+  const dashDelta = dashMoonCX - dashEarthCX;
 
   useEffect(() => {
-    // Initialize Scrollama
     const scroller = scrollama();
 
     scroller
@@ -55,18 +80,19 @@ const App = () => {
         debug: false
       })
       .onStepEnter((response) => {
+        justEnteredRef.current = true;
         setCurrentStep(response.index);
         setScrollProgress(0);
       })
       .onStepProgress((response) => {
+        if (justEnteredRef.current) {
+          justEnteredRef.current = false;
+          return;
+        }
         setScrollProgress(response.progress);
       });
 
-    // Resize handler
-    const handleResize = () => {
-      scroller.resize();
-    };
-
+    const handleResize = () => { scroller.resize(); };
     window.addEventListener('resize', handleResize);
 
     return () => {
@@ -75,25 +101,29 @@ const App = () => {
     };
   }, []);
 
-  // Calculate visible planets based on current step (step 0 is title, step 1+ are planets)
   const visiblePlanets = currentStep > 1 ? planets.slice(0, currentStep - 1) : [];
-  
-  // Calculate scale factor
-  const totalSteps = planets.length + 1;
-  const scaleFactor = Math.max(0.15, 1 - (currentStep / totalSteps) * 0.85);
-  
-  // Calculate total diameter of all visible planets
-  const totalPlanetDiameter = visiblePlanets.reduce((sum, p) => sum + p.diameter, 0);
-  const remainingDistance = actualDistance - totalPlanetDiameter;
-  const percentFilled = (totalPlanetDiameter / actualDistance) * 100;
 
-  // Calculate opacity for title fade out (step 0)
+  const totalSteps = planets.length + 1;
+
+  // Compute the target scale for any given step (used for smooth interpolation)
+  const getTargetScale = (step) => {
+    const stepSc = Math.max(0.10, 1 - (step / totalSteps) * 0.85);
+    const planetsAtStep = step > 1 ? planets.slice(0, step - 1) : [];
+    const maxPx = planetsAtStep.length > 0
+      ? Math.max(earthPx, ...planetsAtStep.map(p => p.diameter / KM_PER_PX))
+      : earthPx;
+    return Math.min(stepSc, (window.innerHeight * 0.75) / maxPx);
+  };
+
+  // Phase 1 (scrollProgress 0→0.5): scale transitions to new target
+  // Phase 2 (scrollProgress 0.5→1): planet rises into position
+  const scalePhase = Math.min(scrollProgress * 2, 1);
+  const prevScale = getTargetScale(Math.max(0, currentStep - 1));
+  const currScale = getTargetScale(currentStep);
+  const scaleFactor = prevScale + (currScale - prevScale) * scalePhase;
+
   const titleOpacity = currentStep === 0 ? 1 - scrollProgress : 0;
-  
-  // Calculate opacity for content fade in - starts fading in at 50% through title fade
   const contentOpacity = currentStep === 0 ? Math.max(0, (scrollProgress - 0.5) / 0.5) : 1;
-  
-  // Calculate vertical offset for Earth and Moon rising from bottom
   const earthMoonOffset = currentStep === 0 ? (1 - Math.max(0, (scrollProgress - 0.5) / 0.5)) * 100 : 0;
 
   return (
@@ -128,26 +158,8 @@ const App = () => {
         }
       `}</style>
 
-      {/* Fixed header with stats - only show after scrolling past title */}
-      {false && currentStep > 0 && (
-        <div 
-          className="fixed top-0 left-0 right-0 bg-black bg-opacity-90 p-4 z-20 border-b border-gray-700 transition-opacity duration-500"
-          style={{ opacity: contentOpacity }}
-        >
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold mb-2">How Far is the Moon?</h1>
-            <div className="text-sm space-y-1">
-              <div>Distance: {actualDistance.toLocaleString()} km</div>
-              <div>Planets Added: {visiblePlanets.length} / {planets.length}</div>
-              <div>Space Filled: {percentFilled.toFixed(1)}%</div>
-              <div className="text-yellow-400">Remaining: {remainingDistance.toLocaleString()} km</div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Fixed title screen that fades out */}
-      <div 
+      <div
         className="fixed inset-0 flex items-center justify-center pointer-events-none z-40 transition-opacity duration-500"
         style={{ opacity: titleOpacity }}
       >
@@ -161,7 +173,7 @@ const App = () => {
       </div>
 
       {/* Fixed horizontal line that fades in */}
-      <div 
+      <div
         className="fixed top-1/2 left-0 right-0 h-px bg-gray-700 z-5 transition-opacity duration-1000"
         style={{ opacity: contentOpacity }}
       />
@@ -174,14 +186,14 @@ const App = () => {
         {/* Visualization container */}
         <div className="relative">
           {/* Sticky visualization */}
-          <div 
+          <div
             className="sticky top-0 h-screen flex items-center justify-center overflow-hidden z-10 transition-opacity duration-500"
             style={{ opacity: contentOpacity }}
           >
             <div className="relative w-full h-full flex items-center justify-center">
               {/* Unified lineup row: Earth | planets | Moon */}
               <div
-                className="absolute flex items-center gap-2 transition-all duration-1000"
+                className="absolute flex items-center transition-opacity duration-500"
                 style={{
                   left: '50%',
                   top: '50%',
@@ -191,11 +203,12 @@ const App = () => {
               >
                 {/* Earth */}
                 <div
-                  className="relative flex-shrink-0 transition-all duration-1000"
+                  className="relative flex-shrink-0"
                   style={{
-                    width: `${earthDiameter / 100}px`,
-                    height: `${earthDiameter / 100}px`,
-                    transform: `translateY(${earthMoonOffset}vh)`
+                    width: `${earthPx}px`,
+                    height: `${earthPx}px`,
+                    transform: `translateY(${earthMoonOffset}vh)`,
+                    transition: currentStep === 0 ? 'transform 1000ms ease' : 'none'
                   }}
                 >
                   <img
@@ -204,42 +217,59 @@ const App = () => {
                     className="rounded-full w-full h-full"
                     style={{ objectFit: 'cover' }}
                   />
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-xs text-center whitespace-nowrap">
-                    <div className="font-bold">Earth</div>
-                    <div className="text-gray-400">{earthDiameter.toLocaleString()} km</div>
-                  </div>
+                  <PlanetLabel name="Earth" diameter={earthDiameter} scale={scaleFactor} />
                 </div>
 
                 {/* Planets in between */}
                 {visiblePlanets.map((planet, idx) => {
                   const isCurrentPlanet = idx === currentStep - 2;
-                  const planetProgress = isCurrentPlanet ? scrollProgress : 1;
-                  const yOffset = Math.max(0, 100 - (planetProgress * 400));
+                  // Sub-phase 2a (0.5→0.75): Earth/Moon spread apart
+                  const spreadProgress = isCurrentPlanet
+                    ? Math.min(1, Math.max(0, (scrollProgress - 0.5) * 4))
+                    : 1;
+                  // Sub-phase 2b (0.75→1.0): planet rises into position
+                  const riseProgress = isCurrentPlanet
+                    ? Math.min(1, Math.max(0, (scrollProgress - 0.75) * 4))
+                    : 1;
+                  const planetWidthPx = planet.diameter / KM_PER_PX;
+                  // translateY(X vh) only moves X*currScale vh on screen when parent is scaled.
+                  // Compute the vh needed so the planet's top edge starts at the viewport bottom.
+                  const startYOffset = 50 / currScale + 50 * planetWidthPx / window.innerHeight + 10;
+                  const yOffset = isCurrentPlanet ? (1 - riseProgress) * startYOffset : 0;
 
                   return (
+                    // Outer div: reserves space in the flex row, grows from 0 to full width
+                    // so Earth and Moon spread apart smoothly instead of snapping
                     <div
                       key={planet.name}
                       className="relative flex-shrink-0"
                       style={{
-                        width: `${planet.diameter / 100}px`,
-                        height: `${planet.diameter / 100}px`,
-                        transform: `translateY(${yOffset}vh)`,
-                        transition: 'transform 200ms linear'
+                        width: `${spreadProgress * planetWidthPx}px`,
+                        height: `${planetWidthPx}px`,
+                        marginLeft: `${spreadProgress * ROW_GAP_PX}px`,
+                        overflow: 'visible',
                       }}
                     >
-                      <div className="rounded-full overflow-hidden bg-black w-full h-full">
-                        {planet.image && (
+                      {/* Inner div: full-size visual, rises from below independently */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          width: `${planetWidthPx}px`,
+                          height: `${planetWidthPx}px`,
+                          transform: `translateY(${yOffset}vh)`,
+                          transition: 'transform 200ms linear',
+                        }}
+                      >
+                        <div className="rounded-full overflow-hidden bg-black w-full h-full">
                           <img
                             src={planet.image}
                             alt={planet.name}
                             className="rounded-full w-full h-full"
                             style={{ objectFit: 'cover' }}
                           />
-                        )}
-                      </div>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-xs text-center whitespace-nowrap">
-                        <div className="font-bold">{planet.name}</div>
-                        <div className="text-gray-400">{planet.diameter.toLocaleString()} km</div>
+                        </div>
+                        <PlanetLabel name={planet.name} diameter={planet.diameter} scale={scaleFactor} above={idx % 2 === 0} />
                       </div>
                     </div>
                   );
@@ -247,11 +277,13 @@ const App = () => {
 
                 {/* Moon */}
                 <div
-                  className="relative flex-shrink-0 transition-all duration-1000"
+                  className="relative flex-shrink-0"
                   style={{
-                    width: `${moonDiameter / 100}px`,
-                    height: `${moonDiameter / 100}px`,
-                    transform: `translateY(${earthMoonOffset}vh)`
+                    width: `${moonPx}px`,
+                    height: `${moonPx}px`,
+                    marginLeft: `${ROW_GAP_PX}px`,
+                    transform: `translateY(${earthMoonOffset}vh)`,
+                    transition: currentStep === 0 ? 'transform 1000ms ease' : 'none'
                   }}
                 >
                   <img
@@ -260,36 +292,35 @@ const App = () => {
                     className="rounded-full w-full h-full"
                     style={{ objectFit: 'cover' }}
                   />
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-xs text-center whitespace-nowrap">
-                    <div className="font-bold">Moon</div>
-                    <div className="text-gray-400">{moonDiameter.toLocaleString()} km</div>
-                  </div>
+                  <PlanetLabel name="Moon" diameter={moonDiameter} scale={scaleFactor} />
                 </div>
               </div>
 
-              {/* Connection line - removed, now fixed outside */}
-
-              {/* Dashed line that appears after second text box settles */}
+              {/* Dashed line from Earth center to Moon center */}
               {currentStep === 1 && scrollProgress > 0.5 && (
-                <div className="absolute top-1/2 left-1/3 -z-10" style={{ width: '33.33vw' }}>
-                  <svg 
-                    style={{
-                      width: '100%',
-                      height: '2px',
-                      overflow: 'visible'
-                    }}
-                  >
-                    <line
-                      x1="0"
-                      y1="0"
-                      x2={`${Math.min((scrollProgress - 0.5) * 200, 100)}%`}
-                      y2="0"
-                      stroke="white"
-                      strokeWidth="2"
-                      strokeDasharray="10 10"
-                    />
-                  </svg>
-                </div>
+                <svg
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: `${earthPx + ROW_GAP_PX + moonPx}px`,
+                    height: '2px',
+                    overflow: 'visible',
+                    pointerEvents: 'none',
+                    zIndex: -1,
+                    transform: `translate(-50%, calc(-50% + ${earthMoonOffset}vh)) scale(${scaleFactor})`
+                  }}
+                >
+                  <line
+                    x1={dashEarthCX}
+                    y1="1"
+                    x2={dashEarthCX + dashDelta * Math.min((scrollProgress - 0.5) * 2, 1)}
+                    y2="1"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeDasharray="10 10"
+                  />
+                </svg>
               )}
             </div>
 
@@ -308,22 +339,13 @@ const App = () => {
               </div>
             )}
 
-            {/* Current planet fact - removed */}
-            {false && currentStep > 1 && currentStep <= planets.length + 1 && (
-              <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 text-center bg-black bg-opacity-80 p-6 rounded-lg max-w-lg border border-gray-700">
-                <div className="text-2xl font-bold mb-2">{planets[currentStep - 2].name}</div>
-                <div className="text-gray-300 italic">{planets[currentStep - 2].fact}</div>
-              </div>
-            )}
-
             {/* Info text that appears after Earth and Moon are positioned */}
             {currentStep === 1 && (
               <>
-                {/* First text box - scrolls from bottom to top and exits */}
                 {scrollProgress < 0.5 && (
-                  <div 
+                  <div
                     className="absolute left-1/2 transform -translate-x-1/2 text-center"
-                    style={{ 
+                    style={{
                       bottom: `${scrollProgress * 240 - 20}%`,
                       transition: 'bottom 0.1s linear'
                     }}
@@ -334,7 +356,6 @@ const App = () => {
                   </div>
                 )}
 
-                {/* Second text box - enters from bottom, exits from top */}
                 {scrollProgress >= 0.5 && (
                   <div
                     className="absolute left-1/2 transform -translate-x-1/2 text-center"
@@ -358,27 +379,15 @@ const App = () => {
           <div className="step" style={{ height: '200vh' }} />
 
           {/* Planet steps */}
-          {planets.map((planet, idx) => (
+          {planets.map((planet) => (
             <div key={planet.name} className="step" style={{ height: '120vh' }} />
           ))}
 
           {/* Final step */}
           <div className="step flex items-center justify-center" style={{ height: '200vh' }}>
             {currentStep === planets.length + 2 && (
-              <div className="text-center max-w-2xl p-8 bg-black bg-opacity-70 rounded-lg">
-                <h2 className="text-4xl font-bold mb-4">Mind = Blown! 🌍🪐🌕</h2>
-                <p className="text-xl text-gray-300 mb-4">
-                  All 8 planets (plus Pluto) fit between Earth and the Moon with room to spare!
-                </p>
-                <p className="text-2xl text-yellow-400 font-bold">
-                  The Moon is {actualDistance.toLocaleString()} km away
-                </p>
-                <button 
-                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                  className="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold transition-colors"
-                >
-                  ↑ Experience Again
-                </button>
+              <div className="text-center text-white text-4xl font-bold">
+                done
               </div>
             )}
           </div>
