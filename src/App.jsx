@@ -56,6 +56,7 @@ const App = () => {
       })
       .onStepEnter((response) => {
         setCurrentStep(response.index);
+        setScrollProgress(0);
       })
       .onStepProgress((response) => {
         setScrollProgress(response.progress);
@@ -178,109 +179,93 @@ const App = () => {
             style={{ opacity: contentOpacity }}
           >
             <div className="relative w-full h-full flex items-center justify-center">
-              {/* Earth */}
-              <div 
-                className="absolute left-1/3 flex flex-col items-center transition-all duration-1000"
-                style={{ 
-                  transform: `scale(${scaleFactor * 2}) translateY(${earthMoonOffset}vh)`,
-                  opacity: contentOpacity,
-                  top: '51%',
-                  marginTop: `-${earthDiameter / 200}px`
+              {/* Unified lineup row: Earth | planets | Moon */}
+              <div
+                className="absolute flex items-center gap-2 transition-all duration-1000"
+                style={{
+                  left: '50%',
+                  top: '50%',
+                  transform: `translate(-50%, -50%) scale(${scaleFactor})`,
+                  opacity: contentOpacity
                 }}
               >
-                  <img 
+                {/* Earth */}
+                <div
+                  className="relative flex-shrink-0 transition-all duration-1000"
+                  style={{
+                    width: `${earthDiameter / 100}px`,
+                    height: `${earthDiameter / 100}px`,
+                    transform: `translateY(${earthMoonOffset}vh)`
+                  }}
+                >
+                  <img
                     src={earthImage}
                     alt="Earth"
-                    className="rounded-full shadow-lg"
-                    style={{ 
-                      width: `${earthDiameter / 100}px`, 
-                      height: `${earthDiameter / 100}px`,
-                      objectFit: 'cover'
-                    }}
+                    className="rounded-full w-full h-full"
+                    style={{ objectFit: 'cover' }}
                   />
-                  <div className="text-xs mt-2 text-center">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-xs text-center whitespace-nowrap">
                     <div className="font-bold">Earth</div>
                     <div className="text-gray-400">{earthDiameter.toLocaleString()} km</div>
                   </div>
                 </div>
 
-              {/* Planets in between */}
-              <div 
-                className="absolute flex items-center gap-4 transition-transform duration-500"
-                style={{ 
-                  left: '50%',
-                  top: '51%',
-                  transform: `translateX(-50%) translateY(-50%) scale(${scaleFactor})`
-                }}
-              >
+                {/* Planets in between */}
                 {visiblePlanets.map((planet, idx) => {
                   const isCurrentPlanet = idx === currentStep - 2;
                   const planetProgress = isCurrentPlanet ? scrollProgress : 1;
-                  const yOffset = -100 + (planetProgress * 100);
-                  
+                  const yOffset = Math.max(0, 100 - (planetProgress * 400));
+
                   return (
-                    <div 
+                    <div
                       key={planet.name}
-                      className="flex flex-col items-center transition-all duration-500"
-                      style={{ 
+                      className="relative flex-shrink-0"
+                      style={{
+                        width: `${planet.diameter / 100}px`,
+                        height: `${planet.diameter / 100}px`,
                         transform: `translateY(${yOffset}vh)`,
-                        opacity: planetProgress
+                        transition: 'transform 200ms linear'
                       }}
                     >
-                      <div 
-                        className="rounded-full shadow-lg"
-                        style={{ 
-                          width: `${planet.diameter / 100}px`, 
-                          height: `${planet.diameter / 100}px`
-                        }}
-                      >
+                      <div className="rounded-full overflow-hidden bg-black w-full h-full">
                         {planet.image && (
-                          <img 
+                          <img
                             src={planet.image}
                             alt={planet.name}
-                            className="rounded-full"
-                            style={{ 
-                              width: '100%', 
-                              height: '100%',
-                              objectFit: 'cover'
-                            }}
+                            className="rounded-full w-full h-full"
+                            style={{ objectFit: 'cover' }}
                           />
                         )}
                       </div>
-                      <div className="text-xs mt-2 text-center whitespace-nowrap">
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-xs text-center whitespace-nowrap">
                         <div className="font-bold">{planet.name}</div>
                         <div className="text-gray-400">{planet.diameter.toLocaleString()} km</div>
                       </div>
                     </div>
                   );
                 })}
-              </div>
 
-              {/* Moon */}
-              <div 
-                className="absolute right-1/3 flex flex-col items-center transition-all duration-1000"
-                style={{ 
-                  transform: `scale(${scaleFactor * 2}) translateY(${earthMoonOffset}vh)`,
-                  opacity: contentOpacity,
-                  top: '52%',
-                  marginTop: `-${moonDiameter / 200}px`
-                }}
-              >
-                  <img 
+                {/* Moon */}
+                <div
+                  className="relative flex-shrink-0 transition-all duration-1000"
+                  style={{
+                    width: `${moonDiameter / 100}px`,
+                    height: `${moonDiameter / 100}px`,
+                    transform: `translateY(${earthMoonOffset}vh)`
+                  }}
+                >
+                  <img
                     src={moonImage}
                     alt="Moon"
-                    className="rounded-full shadow-lg"
-                    style={{ 
-                      width: `${moonDiameter / 100}px`, 
-                      height: `${moonDiameter / 100}px`,
-                      objectFit: 'cover'
-                    }}
+                    className="rounded-full w-full h-full"
+                    style={{ objectFit: 'cover' }}
                   />
-                  <div className="text-xs mt-2 text-center">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-xs text-center whitespace-nowrap">
                     <div className="font-bold">Moon</div>
                     <div className="text-gray-400">{moonDiameter.toLocaleString()} km</div>
                   </div>
                 </div>
+              </div>
 
               {/* Connection line - removed, now fixed outside */}
 
@@ -308,6 +293,21 @@ const App = () => {
               )}
             </div>
 
+            {/* Scale indicator */}
+            {currentStep >= 2 && (
+              <div className="absolute bottom-8 left-8 text-white transition-opacity duration-500">
+                <div className="text-xs text-gray-400 mb-1 uppercase tracking-widest">Scale</div>
+                <div className="flex items-center">
+                  <div style={{ width: '1px', height: '8px', background: 'white' }} />
+                  <div style={{ width: '100px', height: '2px', background: 'white' }} />
+                  <div style={{ width: '1px', height: '8px', background: 'white' }} />
+                </div>
+                <div className="text-xs mt-1 text-center" style={{ width: '102px' }}>
+                  {Math.round(100 / scaleFactor * 100).toLocaleString()} km
+                </div>
+              </div>
+            )}
+
             {/* Current planet fact - removed */}
             {false && currentStep > 1 && currentStep <= planets.length + 1 && (
               <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 text-center bg-black bg-opacity-80 p-6 rounded-lg max-w-lg border border-gray-700">
@@ -334,30 +334,18 @@ const App = () => {
                   </div>
                 )}
 
-                {/* Second text box - appears after first exits, stops at 80% */}
+                {/* Second text box - enters from bottom, exits from top */}
                 {scrollProgress >= 0.5 && (
-                  <div 
+                  <div
                     className="absolute left-1/2 transform -translate-x-1/2 text-center"
-                    style={{ 
-                      bottom: scrollProgress < 0.9 ? `${(scrollProgress - 0.5) * 200 - 20}%` : '80%',
+                    style={{
+                      bottom: `${(scrollProgress - 0.5) * 240 - 20}%`,
                       transition: 'bottom 0.1s linear'
                     }}
                   >
                     <div className="text-sm font-bold text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700">
                       But the actual distance between them is not quite right.
-                    </div>
-                  </div>
-                )}
-
-                {/* Third text box - appears only after second completely stops */}
-                {scrollProgress >= 0.88 && (
-                  <div 
-                    className="absolute left-1/2 transform -translate-x-1/2 text-center"
-                    style={{ 
-                      bottom: `${(scrollProgress - 0.88) * 67}%`
-                    }}
-                  >
-                    <div className="text-sm font-bold text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700">
+                      <br />
                       Let's stretch this to the real distance.
                     </div>
                   </div>
@@ -371,7 +359,7 @@ const App = () => {
 
           {/* Planet steps */}
           {planets.map((planet, idx) => (
-            <div key={planet.name} className="step" style={{ height: '200vh' }} />
+            <div key={planet.name} className="step" style={{ height: '120vh' }} />
           ))}
 
           {/* Final step */}
