@@ -46,13 +46,13 @@ const App = () => {
 
   // Planet data with real relative diameters (km)
   const planets = [
-    { name: 'Mercury', diameter: 4879, image: mercuryImage },
-    { name: 'Venus', diameter: 12104, image: venusImage },
-    { name: 'Mars', diameter: 6779, image: marsImage },
-    { name: 'Jupiter', diameter: 139820, image: jupiterImage },
-    { name: 'Saturn', diameter: 116460, image: saturnImage },
-    { name: 'Uranus', diameter: 50724, image: uranusImage },
-    { name: 'Neptune', diameter: 49244, image: neptuneImage }
+    { name: 'Mercury', diameter: 4879,   image: mercuryImage, aboveLabel: true  },
+    { name: 'Venus',   diameter: 12104,  image: venusImage,   aboveLabel: false },
+    { name: 'Mars',    diameter: 6779,   image: marsImage,    aboveLabel: true  },
+    { name: 'Jupiter', diameter: 139820, image: jupiterImage, aboveLabel: false },
+    { name: 'Saturn',  diameter: 116460, image: saturnImage,  aboveLabel: false },
+    { name: 'Uranus',  diameter: 50724,  image: uranusImage,  aboveLabel: false },
+    { name: 'Neptune', diameter: 49244,  image: neptuneImage, aboveLabel: false },
   ];
 
   // Earth and Moon data
@@ -60,13 +60,15 @@ const App = () => {
   const moonDiameter = 3474;
 
 
-  // Dashed line geometry — derived from constants, computed once per render outside JSX
   const KM_PER_PX = 65; // lower = larger everything, relative scale stays the same
-  const ROW_GAP_PX = 8; // matches gap-2
+  const ROW_GAP_PX = 8;
+  const INITIAL_GAP_PX = 100; // wider Earth-Moon gap in step 1 for the dashed line
   const earthPx = earthDiameter / KM_PER_PX;
   const moonPx = moonDiameter / KM_PER_PX;
+
+  // Dashed line geometry uses the larger initial gap (only shown in step 1)
   const dashEarthCX = earthPx / 2;
-  const dashMoonCX = earthPx + ROW_GAP_PX + moonPx / 2;
+  const dashMoonCX = earthPx + INITIAL_GAP_PX + moonPx / 2;
   const dashDelta = dashMoonCX - dashEarthCX;
 
   useEffect(() => {
@@ -122,6 +124,25 @@ const App = () => {
   const currScale = getTargetScale(currentStep);
   const scaleFactor = prevScale + (currScale - prevScale) * scalePhase;
 
+  // Narrative shown at the bottom of the screen for each planet step
+  const planetNarratives = [
+    "Mercury, the smallest planet at 4,879 km wide, slips into the gap with ease.",
+    "Venus — nearly Earth's twin at 12,104 km — joins the lineup.",
+    "Mars, the Red Planet, adds its 6,779 km to the row.",
+    "Jupiter, the solar system's giant at 139,820 km wide, needs serious room.",
+    "Saturn, ringed and nearly as large, lines up beside Jupiter.",
+    "Uranus, an ice giant at 50,724 km, continues to fill the space.",
+    "Neptune, the farthest planet, completes the lineup. All 7 planets fit — side by side — in the gap between Earth and the Moon.",
+  ];
+
+  // Moon starts with a larger gap so the dashed line is visible in step 1.
+  // As Mercury's spread phase runs (step 2, scrollProgress 0.5→0.75), the extra
+  // gap closes so the planet steps are unaffected.
+  const firstSpread = currentStep === 2
+    ? Math.min(1, Math.max(0, (scrollProgress - 0.5) * 4))
+    : currentStep > 2 ? 1 : 0;
+  const moonMarginLeft = ROW_GAP_PX + (INITIAL_GAP_PX - ROW_GAP_PX) * (1 - firstSpread);
+
   const titleOpacity = currentStep === 0 ? 1 - scrollProgress : 0;
   const contentOpacity = currentStep === 0 ? Math.max(0, (scrollProgress - 0.5) / 0.5) : 1;
   const earthMoonOffset = currentStep === 0 ? (1 - Math.max(0, (scrollProgress - 0.5) / 0.5)) * 100 : 0;
@@ -163,10 +184,14 @@ const App = () => {
         className="fixed inset-0 flex items-center justify-center pointer-events-none z-40 transition-opacity duration-500"
         style={{ opacity: titleOpacity }}
       >
-        <div className="text-center relative z-10">
-          <h1 className="text-6xl font-bold mb-4 text-white">The Distance Between</h1>
-          <p className="text-lg text-gray-400">by Aspen Tabar</p>
-          <div className="mt-16 text-4xl text-gray-500 animate-bounce">
+        <div className="text-center relative z-10 px-6">
+          <h1 className="text-6xl font-bold mb-4 text-white whitespace-nowrap">The Distance Between</h1>
+          <p className="text-lg text-gray-400 mb-4">by Aspen Tabar</p>
+          <p className="text-base text-gray-500 leading-relaxed">
+            The Moon is our nearest neighbor in space — but just how far away is it, really?
+            Scroll to find out what fits in the gap.
+          </p>
+          <div className="mt-12 text-4xl text-gray-500 animate-bounce">
             ↓
           </div>
         </div>
@@ -269,7 +294,9 @@ const App = () => {
                             style={{ objectFit: 'cover' }}
                           />
                         </div>
-                        <PlanetLabel name={planet.name} diameter={planet.diameter} scale={scaleFactor} above={idx % 2 === 0} />
+                        {planetWidthPx * scaleFactor >= 30 && (
+                          <PlanetLabel name={planet.name} diameter={planet.diameter} scale={scaleFactor} above={planet.aboveLabel} />
+                        )}
                       </div>
                     </div>
                   );
@@ -281,7 +308,7 @@ const App = () => {
                   style={{
                     width: `${moonPx}px`,
                     height: `${moonPx}px`,
-                    marginLeft: `${ROW_GAP_PX}px`,
+                    marginLeft: `${moonMarginLeft}px`,
                     transform: `translateY(${earthMoonOffset}vh)`,
                     transition: currentStep === 0 ? 'transform 1000ms ease' : 'none'
                   }}
@@ -303,7 +330,7 @@ const App = () => {
                     position: 'absolute',
                     left: '50%',
                     top: '50%',
-                    width: `${earthPx + ROW_GAP_PX + moonPx}px`,
+                    width: `${earthPx + INITIAL_GAP_PX + moonPx}px`,
                     height: '2px',
                     overflow: 'visible',
                     pointerEvents: 'none',
@@ -339,6 +366,15 @@ const App = () => {
               </div>
             )}
 
+            {/* Per-planet narrative panel */}
+            {currentStep >= 2 && currentStep <= planets.length + 1 && (
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center pointer-events-none">
+                <div className="text-sm text-white bg-black bg-opacity-80 px-5 py-3 rounded-lg border border-gray-700 max-w-md">
+                  {planetNarratives[currentStep - 2]}
+                </div>
+              </div>
+            )}
+
             {/* Info text that appears after Earth and Moon are positioned */}
             {currentStep === 1 && (
               <>
@@ -350,8 +386,10 @@ const App = () => {
                       transition: 'bottom 0.1s linear'
                     }}
                   >
-                    <div className="text-sm font-bold text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700">
-                      This is the Earth and this is the Moon to scale.
+                    <div className="text-sm text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
+                      Here are Earth and the Moon, shown at their true relative sizes.
+                      <br />
+                      <span className="text-gray-400">Earth: 12,742 km wide &nbsp;·&nbsp; Moon: 3,474 km wide</span>
                     </div>
                   </div>
                 )}
@@ -364,10 +402,12 @@ const App = () => {
                       transition: 'bottom 0.1s linear'
                     }}
                   >
-                    <div className="text-sm font-bold text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700">
-                      But the actual distance between them is not quite right.
+                    <div className="text-sm text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
+                      But the gap between them isn't shown to scale — yet.
                       <br />
-                      Let's stretch this to the real distance.
+                      At its farthest point, the Moon is <span className="text-white font-bold">405,500 km</span> away.
+                      <br />
+                      <span className="text-gray-400">Let's stretch the distance to show the real space.</span>
                     </div>
                   </div>
                 )}
@@ -386,8 +426,16 @@ const App = () => {
           {/* Final step */}
           <div className="step flex items-center justify-center" style={{ height: '200vh' }}>
             {currentStep === planets.length + 2 && (
-              <div className="text-center text-white text-4xl font-bold">
-                done
+              <div className="text-center text-white max-w-lg px-6 pointer-events-none">
+                <div className="text-2xl font-bold mb-4">Every planet. One gap.</div>
+                <p className="text-gray-300 text-base leading-relaxed">
+                  At its farthest point — called <span className="text-white font-semibold">apogee</span> — the Moon is about <span className="text-white font-semibold">405,500 km</span> from Earth.
+                  That space is vast enough to hold all seven other planets in our solar system, lined up side by side.
+                </p>
+                <p className="text-gray-500 text-sm mt-4 leading-relaxed">
+                  Even our nearest cosmic neighbor is separated from us by an almost unimaginable distance —
+                  a reminder of just how much empty space fills our solar system.
+                </p>
               </div>
             )}
           </div>
