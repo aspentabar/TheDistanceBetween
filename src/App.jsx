@@ -29,6 +29,7 @@ const PlanetLabel = ({ name, diameter, scale, above }) => (
 const App = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [fillOption, setFillOption] = useState('planets');
   const scrollerRef = useRef(null);
   const justEnteredRef = useRef(false);
 
@@ -61,6 +62,7 @@ const App = () => {
 
 
   const KM_PER_PX = 65; // lower = larger everything, relative scale stays the same
+  const MIN_SCALE_FACTOR = 10000 / 70000; // scale bar cap: 70,000 km per 100px
   const ROW_GAP_PX = 8;
   const INITIAL_GAP_PX = 100; // wider Earth-Moon gap in step 1 for the dashed line
   const earthPx = earthDiameter / KM_PER_PX;
@@ -109,12 +111,12 @@ const App = () => {
 
   // Compute the target scale for any given step (used for smooth interpolation)
   const getTargetScale = (step) => {
-    const stepSc = Math.max(0.10, 1 - (step / totalSteps) * 0.85);
+    const stepSc = Math.max(MIN_SCALE_FACTOR, 1 - (step / totalSteps) * 0.85);
     const planetsAtStep = step > 1 ? planets.slice(0, step - 1) : [];
     const maxPx = planetsAtStep.length > 0
       ? Math.max(earthPx, ...planetsAtStep.map(p => p.diameter / KM_PER_PX))
       : earthPx;
-    return Math.min(stepSc, (window.innerHeight * 0.75) / maxPx);
+    return Math.max(MIN_SCALE_FACTOR, Math.min(stepSc, (window.innerHeight * 0.75) / maxPx));
   };
 
   // Phase 1 (scrollProgress 0→0.5): scale transitions to new target
@@ -124,17 +126,6 @@ const App = () => {
   const currScale = getTargetScale(currentStep);
   const scaleFactor = prevScale + (currScale - prevScale) * scalePhase;
 
-  // Narrative shown at the bottom of the screen for each planet step
-  const planetNarratives = [
-    "Mercury, the smallest planet at 4,879 km wide, slips into the gap with ease.",
-    "Venus — nearly Earth's twin at 12,104 km — joins the lineup.",
-    "Mars, the Red Planet, adds its 6,779 km to the row.",
-    "Jupiter, the solar system's giant at 139,820 km wide, needs serious room.",
-    "Saturn, ringed and nearly as large, lines up beside Jupiter.",
-    "Uranus, an ice giant at 50,724 km, continues to fill the space.",
-    "Neptune, the farthest planet, completes the lineup. All 7 planets fit — side by side — in the gap between Earth and the Moon.",
-  ];
-
   // Moon starts with a larger gap so the dashed line is visible in step 1.
   // As Mercury's spread phase runs (step 2, scrollProgress 0.5→0.75), the extra
   // gap closes so the planet steps are unaffected.
@@ -142,6 +133,15 @@ const App = () => {
     ? Math.min(1, Math.max(0, (scrollProgress - 0.5) * 4))
     : currentStep > 2 ? 1 : 0;
   const moonMarginLeft = ROW_GAP_PX + (INITIAL_GAP_PX - ROW_GAP_PX) * (1 - firstSpread);
+
+  // Total row width (unscaled px) — used to align the final distance bar
+  const totalPlanetWidthsPx = planets.reduce((sum, p) => sum + p.diameter / KM_PER_PX, 0);
+  const totalRowWidthPx = earthPx + (planets.length + 1) * ROW_GAP_PX + totalPlanetWidthsPx + moonPx;
+
+  // Fill option config: how many of each body fits in the 405,500 km gap
+  const wrapperWidthPx = totalPlanetWidthsPx + planets.length * ROW_GAP_PX;
+  const FILL_COUNTS = { planets: 7, earths: 30, moons: Math.floor(405500 / moonDiameter) };
+  const moonFillPx = wrapperWidthPx / FILL_COUNTS.moons;
 
   const titleOpacity = currentStep === 0 ? 1 - scrollProgress : 0;
   const contentOpacity = currentStep === 0 ? Math.max(0, (scrollProgress - 0.5) / 0.5) : 1;
@@ -186,10 +186,10 @@ const App = () => {
       >
         <div className="text-center relative z-10 px-6">
           <h1 className="text-6xl font-bold mb-4 text-white whitespace-nowrap">The Distance Between</h1>
-          <p className="text-lg text-gray-400 mb-4">by Aspen Tabar</p>
-          <p className="text-base text-gray-500 leading-relaxed">
-            The Moon is our nearest neighbor in space — but just how far away is it, really?
-            Scroll to find out what fits in the gap.
+          {/* <p className="text-lg text-gray-400 mb-4">by Aspen Tabar</p>
+          <br /> */}
+          <p className="text-base text-gray-400 leading-relaxed">
+            The Moon is our closest neighbor in space, but just how far away is it, really?
           </p>
           <div className="mt-12 text-4xl text-gray-500 animate-bounce">
             ↓
@@ -246,61 +246,150 @@ const App = () => {
                 </div>
 
                 {/* Planets in between */}
-                {visiblePlanets.map((planet, idx) => {
-                  const isCurrentPlanet = idx === currentStep - 2;
-                  // Sub-phase 2a (0.5→0.75): Earth/Moon spread apart
-                  const spreadProgress = isCurrentPlanet
-                    ? Math.min(1, Math.max(0, (scrollProgress - 0.5) * 4))
-                    : 1;
-                  // Sub-phase 2b (0.75→1.0): planet rises into position
-                  const riseProgress = isCurrentPlanet
-                    ? Math.min(1, Math.max(0, (scrollProgress - 0.75) * 4))
-                    : 1;
-                  const planetWidthPx = planet.diameter / KM_PER_PX;
-                  // translateY(X vh) only moves X*currScale vh on screen when parent is scaled.
-                  // Compute the vh needed so the planet's top edge starts at the viewport bottom.
-                  const startYOffset = 50 / currScale + 50 * planetWidthPx / window.innerHeight + 10;
-                  const yOffset = isCurrentPlanet ? (1 - riseProgress) * startYOffset : 0;
-
-                  return (
-                    // Outer div: reserves space in the flex row, grows from 0 to full width
-                    // so Earth and Moon spread apart smoothly instead of snapping
+                {currentStep === planets.length + 2 ? (
+                  // Final step: static planets with earths crossfade overlay
+                  <div
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      flexShrink: 0,
+                      width: `${totalPlanetWidthsPx + planets.length * ROW_GAP_PX}px`,
+                      height: `${Math.max(...planets.map(p => p.diameter / KM_PER_PX))}px`,
+                    }}
+                  >
+                    {/* Planets layer — fades out when earths selected */}
                     <div
-                      key={planet.name}
-                      className="relative flex-shrink-0"
                       style={{
-                        width: `${spreadProgress * planetWidthPx}px`,
-                        height: `${planetWidthPx}px`,
-                        marginLeft: `${spreadProgress * ROW_GAP_PX}px`,
-                        overflow: 'visible',
+                        display: 'flex',
+                        alignItems: 'center',
+                        height: '100%',
+                        opacity: fillOption === 'earths' ? 0 : 1,
+                        transition: 'opacity 0.6s ease',
                       }}
                     >
-                      {/* Inner div: full-size visual, rises from below independently */}
+                      {planets.map((planet) => {
+                        const planetWidthPx = planet.diameter / KM_PER_PX;
+                        return (
+                          <div
+                            key={planet.name}
+                            className="relative flex-shrink-0"
+                            style={{ width: `${planetWidthPx}px`, height: `${planetWidthPx}px`, marginLeft: `${ROW_GAP_PX}px` }}
+                          >
+                            <div className="rounded-full overflow-hidden bg-black w-full h-full">
+                              <img src={planet.image} alt={planet.name} className="rounded-full w-full h-full" style={{ objectFit: 'cover' }} />
+                            </div>
+                            {planetWidthPx * scaleFactor >= 30 && (
+                              <PlanetLabel name={planet.name} diameter={planet.diameter} scale={scaleFactor} above={planet.aboveLabel} />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Earths layer — fades in when earths selected */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        opacity: fillOption === 'earths' ? 1 : 0,
+                        transition: 'opacity 0.6s ease',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      {[...Array(30)].map((_, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            width: `${earthPx}px`,
+                            height: `${earthPx}px`,
+                            marginLeft: i === 0 ? `${ROW_GAP_PX}px` : '1px',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <img src={earthImage} alt="" className="rounded-full w-full h-full" style={{ objectFit: 'cover' }} />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Moons layer — fades in when moons selected */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        opacity: fillOption === 'moons' ? 1 : 0,
+                        transition: 'opacity 0.6s ease',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      {[...Array(FILL_COUNTS.moons)].map((_, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            width: `${moonFillPx}px`,
+                            height: `${moonFillPx}px`,
+                            flexShrink: 0,
+                          }}
+                        >
+                          <img src={moonImage} alt="" className="rounded-full w-full h-full" style={{ objectFit: 'cover' }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  visiblePlanets.map((planet, idx) => {
+                    const isCurrentPlanet = idx === currentStep - 2;
+                    // Sub-phase 2a (0.5→0.75): Earth/Moon spread apart
+                    const spreadProgress = isCurrentPlanet
+                      ? Math.min(1, Math.max(0, (scrollProgress - 0.5) * 4))
+                      : 1;
+                    // Sub-phase 2b (0.75→1.0): planet rises into position
+                    const riseProgress = isCurrentPlanet
+                      ? Math.min(1, Math.max(0, (scrollProgress - 0.75) * 4))
+                      : 1;
+                    const planetWidthPx = planet.diameter / KM_PER_PX;
+                    const startYOffset = 50 / currScale + 50 * planetWidthPx / window.innerHeight + 10;
+                    const yOffset = isCurrentPlanet ? (1 - riseProgress) * startYOffset : 0;
+
+                    return (
                       <div
+                        key={planet.name}
+                        className="relative flex-shrink-0"
                         style={{
-                          position: 'absolute',
-                          left: 0,
-                          width: `${planetWidthPx}px`,
+                          width: `${spreadProgress * planetWidthPx}px`,
                           height: `${planetWidthPx}px`,
-                          transform: `translateY(${yOffset}vh)`,
-                          transition: 'transform 200ms linear',
+                          marginLeft: `${spreadProgress * ROW_GAP_PX}px`,
+                          overflow: 'visible',
                         }}
                       >
-                        <div className="rounded-full overflow-hidden bg-black w-full h-full">
-                          <img
-                            src={planet.image}
-                            alt={planet.name}
-                            className="rounded-full w-full h-full"
-                            style={{ objectFit: 'cover' }}
-                          />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            width: `${planetWidthPx}px`,
+                            height: `${planetWidthPx}px`,
+                            transform: `translateY(${yOffset}vh)`,
+                            transition: 'transform 200ms linear',
+                          }}
+                        >
+                          <div className="rounded-full overflow-hidden bg-black w-full h-full">
+                            <img src={planet.image} alt={planet.name} className="rounded-full w-full h-full" style={{ objectFit: 'cover' }} />
+                          </div>
+                          {planetWidthPx * scaleFactor >= 30 && (
+                            <PlanetLabel name={planet.name} diameter={planet.diameter} scale={scaleFactor} above={planet.aboveLabel} />
+                          )}
                         </div>
-                        {planetWidthPx * scaleFactor >= 30 && (
-                          <PlanetLabel name={planet.name} diameter={planet.diameter} scale={scaleFactor} above={planet.aboveLabel} />
-                        )}
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
 
                 {/* Moon */}
                 <div
@@ -324,7 +413,7 @@ const App = () => {
               </div>
 
               {/* Dashed line from Earth center to Moon center */}
-              {currentStep === 1 && scrollProgress > 0.5 && (
+              {currentStep === 1 && scrollProgress > 0.3 && (
                 <svg
                   style={{
                     position: 'absolute',
@@ -341,7 +430,7 @@ const App = () => {
                   <line
                     x1={dashEarthCX}
                     y1="1"
-                    x2={dashEarthCX + dashDelta * Math.min((scrollProgress - 0.5) * 2, 1)}
+                    x2={dashEarthCX + dashDelta * Math.min(Math.max(0, (scrollProgress - 0.3) / 0.4), 1) * (1 - Math.min(Math.max(0, (scrollProgress - 0.75) / 0.25), 1))}
                     y2="1"
                     stroke="white"
                     strokeWidth="2"
@@ -361,16 +450,46 @@ const App = () => {
                   <div style={{ width: '1px', height: '8px', background: 'white' }} />
                 </div>
                 <div className="text-xs mt-1 text-center" style={{ width: '102px' }}>
-                  {Math.round(100 / scaleFactor * 100).toLocaleString()} km
+                  {Math.min(70000, Math.round(100 / scaleFactor * 100)).toLocaleString()} km
                 </div>
               </div>
             )}
 
-            {/* Per-planet narrative panel */}
-            {currentStep >= 2 && currentStep <= planets.length + 1 && (
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center pointer-events-none">
-                <div className="text-sm text-white bg-black bg-opacity-80 px-5 py-3 rounded-lg border border-gray-700 max-w-md">
-                  {planetNarratives[currentStep - 2]}
+
+            {/* Distance bar — final aha moment */}
+            {currentStep === planets.length + 2 && scrollProgress > 0.4 && (
+              <div
+                className="absolute text-center"
+                style={{
+                  top: '8%',
+                  left: `${window.innerWidth / 2 - scaleFactor * (totalRowWidthPx / 2 - earthPx / 2)}px`,
+                  width: `${scaleFactor * (totalRowWidthPx - earthPx / 2 - moonPx / 2)}px`,
+                  opacity: Math.min(1, (scrollProgress - 0.4) / 0.3),
+                  transition: 'opacity 0.3s ease',
+                }}
+              >
+                <div className="text-xs text-gray-400 uppercase tracking-widest mb-3">
+                  Earth → Moon distance at apogee
+                </div>
+                <div className="flex items-center">
+                  <div style={{ width: '2px', height: '20px', background: 'white' }} />
+                  <div style={{ flex: 1, height: '2px', background: 'white' }} />
+                  <div className="px-6 text-3xl font-bold text-white whitespace-nowrap">405,500 km</div>
+                  <div style={{ flex: 1, height: '2px', background: 'white' }} />
+                  <div style={{ width: '2px', height: '20px', background: 'white' }} />
+                </div>
+                <div className="text-sm text-gray-400 mt-3">
+                  All {FILL_COUNTS[fillOption]}{' '}
+                  <select
+                    value={fillOption}
+                    onChange={e => setFillOption(e.target.value)}
+                    className="bg-transparent border-b border-gray-400 text-gray-400 cursor-pointer outline-none"
+                  >
+                    <option value="planets">planets</option>
+                    <option value="earths">earths</option>
+                    <option value="moons">moons</option>
+                  </select>
+                  {' '}fit side by side in this gap.
                 </div>
               </div>
             )}
@@ -380,7 +499,7 @@ const App = () => {
               <>
                 {scrollProgress < 0.5 && (
                   <div
-                    className="absolute left-1/2 transform -translate-x-1/2 text-center"
+                    className="absolute right-24 text-left"
                     style={{
                       bottom: `${scrollProgress * 240 - 20}%`,
                       transition: 'bottom 0.1s linear'
@@ -388,7 +507,7 @@ const App = () => {
                   >
                     <div className="text-sm text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
                       Here are Earth and the Moon, shown at their true relative sizes.
-                      <br />
+                      <br /><br />
                       <span className="text-gray-400">Earth: 12,742 km wide &nbsp;·&nbsp; Moon: 3,474 km wide</span>
                     </div>
                   </div>
@@ -396,18 +515,18 @@ const App = () => {
 
                 {scrollProgress >= 0.5 && (
                   <div
-                    className="absolute left-1/2 transform -translate-x-1/2 text-center"
+                    className="absolute right-24 text-left"
                     style={{
                       bottom: `${(scrollProgress - 0.5) * 240 - 20}%`,
                       transition: 'bottom 0.1s linear'
                     }}
                   >
-                    <div className="text-sm text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
-                      But the gap between them isn't shown to scale — yet.
-                      <br />
-                      At its farthest point, the Moon is <span className="text-white font-bold">405,500 km</span> away.
-                      <br />
-                      <span className="text-gray-400">Let's stretch the distance to show the real space.</span>
+                    <div className="text-sm text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-md">
+                      But the gap between them is <span className="font-bold">not</span> accurate. 
+                      <br /><br />
+                      At its farthest point, the Moon is <span className="font-bold">405,500 km</span> away.
+                      <br /><br />
+                      <span className="text-gray-400">Let's stretch the distance to show the real scale!</span>
                     </div>
                   </div>
                 )}
@@ -424,21 +543,7 @@ const App = () => {
           ))}
 
           {/* Final step */}
-          <div className="step flex items-center justify-center" style={{ height: '200vh' }}>
-            {currentStep === planets.length + 2 && (
-              <div className="text-center text-white max-w-lg px-6 pointer-events-none">
-                <div className="text-2xl font-bold mb-4">Every planet. One gap.</div>
-                <p className="text-gray-300 text-base leading-relaxed">
-                  At its farthest point — called <span className="text-white font-semibold">apogee</span> — the Moon is about <span className="text-white font-semibold">405,500 km</span> from Earth.
-                  That space is vast enough to hold all seven other planets in our solar system, lined up side by side.
-                </p>
-                <p className="text-gray-500 text-sm mt-4 leading-relaxed">
-                  Even our nearest cosmic neighbor is separated from us by an almost unimaginable distance —
-                  a reminder of just how much empty space fills our solar system.
-                </p>
-              </div>
-            )}
-          </div>
+          <div className="step" style={{ height: '200vh' }} />
         </div>
       </div>
     </div>
