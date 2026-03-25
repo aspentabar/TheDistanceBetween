@@ -263,7 +263,7 @@ const App = () => {
                         display: 'flex',
                         alignItems: 'center',
                         height: '100%',
-                        opacity: fillOption === 'earths' ? 0 : 1,
+                        opacity: fillOption === 'planets' ? 1 : 0,
                         transition: 'opacity 0.6s ease',
                       }}
                     >
@@ -469,7 +469,7 @@ const App = () => {
                 }}
               >
                 <div className="text-xs text-gray-400 uppercase tracking-widest mb-3">
-                  Earth → Moon distance at apogee
+                  Earth → Moon at its largest distance
                 </div>
                 <div className="flex items-center">
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
