@@ -188,7 +188,7 @@ const App = () => {
           <h1 className="text-6xl font-bold mb-4 text-white whitespace-nowrap">The Distance Between</h1>
           {/* <p className="text-lg text-gray-400 mb-4">by Aspen Tabar</p>
           <br /> */}
-          <p className="text-base text-gray-400 leading-relaxed">
+          <p className="text-base text-gray-400 leading-relaxed tracking-wider">
             The Moon is our closest neighbor in space, but just how far away is it, really?
           </p>
           <div className="mt-12 text-4xl text-gray-500 animate-bounce">
@@ -443,7 +443,7 @@ const App = () => {
             {/* Scale indicator */}
             {currentStep >= 2 && (
               <div className="absolute bottom-8 left-8 text-white transition-opacity duration-500">
-                <div className="text-xs text-gray-400 mb-1 uppercase tracking-widest">Scale</div>
+                <div className="text-xs text-gray-400 mb-1 uppercase tracking-widerst">Scale</div>
                 <div className="flex items-center">
                   <div style={{ width: '1px', height: '8px', background: 'white' }} />
                   <div style={{ width: '100px', height: '2px', background: 'white' }} />
@@ -468,7 +468,7 @@ const App = () => {
                   transition: 'opacity 0.3s ease',
                 }}
               >
-                <div className="text-xs text-gray-400 uppercase tracking-widest mb-3">
+                <div className="text-xs text-gray-400 uppercase tracking-widerst mb-3">
                   Earth → Moon at its largest distance
                 </div>
                 <div className="flex items-center">
@@ -478,7 +478,7 @@ const App = () => {
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
                 </div>
-                <div className="text-sm text-gray-400 mt-3">
+                <div className="text-sm tracking-wider text-gray-400 mt-3">
                   All {FILL_COUNTS[fillOption]}{' '}
                   <select
                     value={fillOption}
@@ -505,7 +505,7 @@ const App = () => {
                       transition: 'bottom 0.1s linear'
                     }}
                   >
-                    <div className="text-sm text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
+                    <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
                       Here are Earth and the Moon, shown at their true relative sizes.
                       <br /><br />
                       <span className="text-gray-400">Earth: 12,742 km wide &nbsp;·&nbsp; Moon: 3,474 km wide</span>
@@ -521,8 +521,8 @@ const App = () => {
                       transition: 'bottom 0.1s linear'
                     }}
                   >
-                    <div className="text-sm text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-md">
-                      But the gap between them is <span className="font-bold">not</span> accurate. 
+                    <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-md">
+                      But the gap between them is <span className="font-bold">not</span> accurate.
                       <br /><br />
                       At its farthest point, the Moon is <span className="font-bold">405,500 km</span> away.
                       <br /><br />
