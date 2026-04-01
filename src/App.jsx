@@ -10,12 +10,14 @@ import saturnImage from './assets/saturn.png';
 import uranusImage from './assets/uranus.png';
 import neptuneImage from './assets/neptune.png';
 
-const PlanetLabel = ({ name, diameter, scale, above }) => (
+const PlanetLabel = ({ name, diameter, scale, above, opacity = 1 }) => (
   <div
     className="absolute left-1/2 text-center whitespace-nowrap"
     style={{
       transform: `translateX(-50%) scale(${1 / scale})`,
       transformOrigin: above ? 'bottom center' : 'top center',
+      opacity,
+      transition: 'opacity 0.2s ease',
       ...(above
         ? { bottom: '100%', marginBottom: '8px' }
         : { top: '100%', marginTop: '8px' }),
@@ -48,7 +50,7 @@ const App = () => {
   // Planet data with real relative diameters (km)
   const planets = [
     { name: 'Mercury', diameter: 4879,   image: mercuryImage, aboveLabel: true  },
-    { name: 'Venus',   diameter: 12104,  image: venusImage,   aboveLabel: false },
+    { name: 'Venus',   diameter: 12104,  image: venusImage,   aboveLabel: true  },
     { name: 'Mars',    diameter: 6779,   image: marsImage,    aboveLabel: true  },
     { name: 'Jupiter', diameter: 139820, image: jupiterImage, aboveLabel: false },
     { name: 'Saturn',  diameter: 116460, image: saturnImage,  aboveLabel: false },
@@ -122,11 +124,9 @@ const App = () => {
   const FILL_COUNTS = { planets: 7, earths: 30, moons: Math.floor(405500 / moonDiameter) };
   const moonFillPx = wrapperWidthPx / FILL_COUNTS.moons;
 
-  // Step 2: zoom completes first (0→30%), then the gap spreads (30→60%).
-  // This ensures Earth & Moon are already small before they spread apart, preventing overflow.
-  const scalePhase = currentStep === 2
-    ? Math.min(1, scrollProgress / 0.3)
-    : Math.min(scrollProgress * 2, 1);
+  const smoothstep = x => x * x * (3 - 2 * x);
+  const t = Math.min(scrollProgress * 2, 1);
+  const scalePhase = smoothstep(t);
   const prevScale = getTargetScale(Math.max(0, currentStep - 1));
   const currScale = getTargetScale(currentStep);
   const scaleFactor = prevScale + (currScale - prevScale) * scalePhase;
@@ -135,11 +135,28 @@ const App = () => {
   // In steps 3+, all 7 planet divs fill the flex row, so moonMarginLeft = ROW_GAP_PX.
   const fullGapPx = totalPlanetWidthsPx + (planets.length + 1) * ROW_GAP_PX;
   const spreadToFullProgress = currentStep === 2
-    ? Math.min(1, Math.max(0, (scrollProgress - 0.3) / 0.3))
+    ? smoothstep(t * t * t)
     : currentStep > 2 ? 1 : 0;
   const moonMarginLeft = currentStep > 2
     ? ROW_GAP_PX
     : INITIAL_GAP_PX + (fullGapPx - INITIAL_GAP_PX) * spreadToFullProgress;
+
+  // Label opacity for each planet:
+  // - Small planets (0-2): fade in when entering, fade out when the next small planet enters
+  // - Large planets (3+): binary show/hide based on size threshold
+  const currentRiseProgress = Math.min(1, scrollProgress / 0.85);
+  const planetLabelOpacity = planets.map((planet, idx) => {
+    if (idx >= 3) {
+      return currentStep >= idx + 3 && (planet.diameter / KM_PER_PX) * scaleFactor >= 30 ? 1 : 0;
+    }
+    // Small planets (Mercury=0, Venus=1, Mars=2)
+    const enteredAt = idx + 3;
+    const nextEntersAt = idx + 4; // the next planet (which displaces this label) enters here
+    if (currentStep < enteredAt) return 0;
+    if (currentStep === nextEntersAt) return 1 - currentRiseProgress;   // fade out as next planet rises
+    if (currentStep > nextEntersAt) return 0;                           // gone after next has settled
+    return 1;                                                            // fully visible once entered
+  });
 
   const titleOpacity = currentStep === 0 ? 1 - scrollProgress : 0;
   const contentOpacity = currentStep === 0 ? Math.max(0, (scrollProgress - 0.5) / 0.5) : 1;
@@ -148,7 +165,7 @@ const App = () => {
   return (
     <div className="relative bg-black text-white">
       {/* Stationary star background for entire experience */}
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-0" style={{ transform: `scale(${Math.pow(scaleFactor, 0.2)})`, transformOrigin: 'center center' }}>
         {stars.map((star, i) => (
           <div
             key={i}
@@ -323,8 +340,8 @@ const App = () => {
                           <div className="rounded-full overflow-hidden bg-black w-full h-full">
                             <img src={planet.image} alt={planet.name} className="rounded-full w-full h-full" style={{ objectFit: 'cover' }} />
                           </div>
-                          {opacity > 0 && planetWidthPx * scaleFactor >= 30 && (
-                            <PlanetLabel name={planet.name} diameter={planet.diameter} scale={scaleFactor} above={planet.aboveLabel} />
+                          {opacity > 0 && planetLabelOpacity[idx] > 0 && (
+                            <PlanetLabel name={planet.name} diameter={planet.diameter} scale={scaleFactor} above={planet.aboveLabel} opacity={planetLabelOpacity[idx]} />
                           )}
                         </div>
                       </div>
@@ -381,20 +398,6 @@ const App = () => {
               )}
             </div>
 
-            {/* Scale indicator */}
-            {currentStep >= 2 && scaleFactor < 1 && (
-              <div className="absolute bottom-8 left-8 text-white transition-opacity duration-500">
-                <div className="text-xs text-gray-400 mb-1 uppercase tracking-widerst">Scale</div>
-                <div className="flex items-center">
-                  <div style={{ width: '1px', height: '8px', background: 'white' }} />
-                  <div style={{ width: '100px', height: '2px', background: 'white' }} />
-                  <div style={{ width: '1px', height: '8px', background: 'white' }} />
-                </div>
-                <div className="text-xs mt-1 text-center" style={{ width: '102px' }}>
-                  {Math.min(70000, Math.round(100 / scaleFactor * 100)).toLocaleString()} km
-                </div>
-              </div>
-            )}
 
 
             {/* Step 2: measurement line — shows 405,500 km gap as Earth & Moon spread apart */}
@@ -501,11 +504,12 @@ const App = () => {
             )}
 
             {/* Step 2 text box — appears after gap is fully spread */}
-            {currentStep === 2 && spreadToFullProgress >= 1 && scrollProgress > 0.65 && (
+            {currentStep === 2 && spreadToFullProgress >= 1 && scrollProgress > 0.6 && (
               <div
-                className="absolute right-24 text-left"
+                className="absolute left-1/2 text-left"
                 style={{
-                  bottom: `${(scrollProgress - 0.65) * 240 - 20}%`,
+                  bottom: `${(scrollProgress - 0.6) * 240 - 20}%`,
+                  transform: 'translateX(-50%)',
                   transition: 'bottom 0.1s linear',
                 }}
               >
