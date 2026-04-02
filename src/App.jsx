@@ -9,6 +9,10 @@ import jupiterImage from './assets/jupiter.png';
 import saturnImage from './assets/saturn.png';
 import uranusImage from './assets/uranus.png';
 import neptuneImage from './assets/neptune.png';
+import whaleImage from './assets/whale.png';
+import burjImage from './assets/burj.png';
+import mountainImage from './assets/mountain.png';
+import australiaImage from './assets/Australia.png';
 
 const PlanetLabel = ({ name, diameter, scale, above, opacity = 1 }) => (
   <div
@@ -18,6 +22,7 @@ const PlanetLabel = ({ name, diameter, scale, above, opacity = 1 }) => (
       transformOrigin: above ? 'bottom center' : 'top center',
       opacity,
       transition: 'opacity 0.2s ease',
+      zIndex: 10,
       ...(above
         ? { bottom: '100%', marginBottom: '8px' }
         : { top: '100%', marginTop: '8px' }),
@@ -121,7 +126,7 @@ const App = () => {
   const totalPlanetWidthsPx = planets.reduce((sum, p) => sum + p.diameter / KM_PER_PX, 0);
   const totalRowWidthPx = earthPx + (planets.length + 1) * ROW_GAP_PX + totalPlanetWidthsPx + moonPx;
   const wrapperWidthPx = totalPlanetWidthsPx + planets.length * ROW_GAP_PX;
-  const FILL_COUNTS = { planets: 7, earths: 30, moons: Math.floor(405500 / moonDiameter) };
+  const FILL_COUNTS = { planets: 7, earths: 30, moons: Math.floor(405500 / moonDiameter), whales: Math.floor(405500 * 1000 / 30), burj: Math.floor(405500 * 1000 / 828), everest: Math.floor(405500 / 8.849), australia: Math.floor(405500 / 4000) };
   const moonFillPx = wrapperWidthPx / FILL_COUNTS.moons;
 
   const smoothstep = x => x * x * (3 - 2 * x);
@@ -204,7 +209,7 @@ const App = () => {
           {/* <p className="text-lg text-gray-400 mb-4">by Aspen Tabar</p>
           <br /> */}
           <p className="text-base text-gray-400 leading-relaxed tracking-wider">
-            The Moon is 405,500 km away — far enough to fit every other planet in our solar system, side by side.
+            The Moon is our closest neighbor in space, but how far away is it, really?
           </p>
           <div className="mt-12 text-4xl text-gray-500 animate-bounce">
             ↓
@@ -304,6 +309,152 @@ const App = () => {
                         </div>
                       ))}
                     </div>
+
+                    {/* Whales layer */}
+                    {(() => {
+                      const whaleW = wrapperWidthPx / 30;
+                      const whaleH = whaleW * 0.4;
+                      const extraRows = 80;
+                      return (
+                        <>
+                          {/* Centered single row with text above */}
+                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', transform: 'translateY(-50%)', opacity: fillOption === 'whales' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                            <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: `${3 / scaleFactor}px`, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                              <div style={{ fontSize: `${Math.max(8, 13 / scaleFactor)}px`, fontWeight: 'bold', color: 'white' }}>
+                                × {FILL_COUNTS.whales.toLocaleString()} blue whales
+                              </div>
+                              <div style={{ fontSize: `${Math.max(6, 10 / scaleFactor)}px`, color: '#9ca3af', marginTop: `${2 / scaleFactor}px` }}>
+                                about 900× all the blue whales alive on Earth today
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex' }}>
+                              {[...Array(30)].map((_, i) => (
+                                <img key={i} src={whaleImage} alt="" style={{ width: `${whaleW}px`, height: `${whaleH}px`, objectFit: 'contain', flexShrink: 0 }} />
+                              ))}
+                            </div>
+                          </div>
+                          {/* Extra rows cascading downward off screen */}
+                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${whaleH / 2}px`, opacity: fillOption === 'whales' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              {[...Array(extraRows)].map((_, row) => (
+                                <div key={row} style={{ display: 'flex' }}>
+                                  {[...Array(30)].map((_, i) => (
+                                    <img key={i} src={whaleImage} alt="" style={{ width: `${whaleW}px`, height: `${whaleH}px`, objectFit: 'contain', flexShrink: 0 }} />
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+
+                    {/* Burj Khalifa layer */}
+                    {(() => {
+                      const burjW = wrapperWidthPx / 25;
+                      const burjH = burjW * 0.35;
+                      const extraRows = 80;
+                      const BurjImg = ({ i }) => (
+                        <div key={i} style={{ width: `${burjW}px`, height: `${burjH}px`, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                          <img src={burjImage} alt="" style={{ width: `${burjH}px`, height: `${burjW}px`, objectFit: 'contain', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(90deg)' }} />
+                        </div>
+                      );
+                      return (
+                        <>
+                          {/* Centered single row with text above */}
+                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', transform: 'translateY(-50%)', opacity: fillOption === 'burj' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                            <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: `${3 / scaleFactor}px`, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                              <div style={{ fontSize: `${Math.max(8, 13 / scaleFactor)}px`, fontWeight: 'bold', color: 'white' }}>
+                                × {FILL_COUNTS.burj.toLocaleString()} Burj Khalifas
+                              </div>
+                              <div style={{ fontSize: `${Math.max(6, 10 / scaleFactor)}px`, color: '#9ca3af', marginTop: `${2 / scaleFactor}px` }}>
+                                the tallest building in the world, standing at 828 m
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex' }}>
+                              {[...Array(25)].map((_, i) => <BurjImg key={i} i={i} />)}
+                            </div>
+                          </div>
+                          {/* Extra rows cascading downward off screen */}
+                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${burjH / 2}px`, opacity: fillOption === 'burj' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              {[...Array(extraRows)].map((_, row) => (
+                                <div key={row} style={{ display: 'flex' }}>
+                                  {[...Array(25)].map((_, i) => <BurjImg key={i} i={i} />)}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+
+                    {/* Australia layer */}
+                    {(() => {
+                      const perRow = 15;
+                      const total = FILL_COUNTS.australia;
+                      const australiaW = wrapperWidthPx / perRow;
+                      const australiaH = australiaW * 0.9;
+                      const rows = [];
+                      for (let i = 0; i < total; i += perRow) {
+                        rows.push([...Array(Math.min(perRow, total - i))].map((_, j) => i + j));
+                      }
+                      const AustraliaImg = ({ idx }) => (
+                        <div key={idx} style={{ width: `${australiaW}px`, height: `${australiaH}px`, flexShrink: 0, overflow: 'hidden' }}>
+                          <img src={australiaImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+                        </div>
+                      );
+                      return (
+                        <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${-australiaH / 2}px`, opacity: fillOption === 'australia' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                          <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: `${3 / scaleFactor}px`, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <div style={{ fontSize: `${Math.max(8, 13 / scaleFactor)}px`, fontWeight: 'bold', color: 'white' }}>
+                              × {FILL_COUNTS.australia.toLocaleString()} Australias
+                            </div>
+                            <div style={{ fontSize: `${Math.max(6, 10 / scaleFactor)}px`, color: '#9ca3af', marginTop: `${2 / scaleFactor}px` }}>
+                              the world's largest island, ~4,000 km wide
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {rows.map((rowItems, row) => (
+                              <div key={row} style={{ display: 'flex', lineHeight: 0 }}>
+                                {rowItems.map(idx => <AustraliaImg key={idx} idx={idx} />)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Mount Everest layer */}
+                    {(() => {
+                      const everestW = wrapperWidthPx / 20;
+                      const everestH = everestW * 0.65;
+                      const totalRows = 31;
+                      const EverestImg = ({ i }) => (
+                        <div key={i} style={{ width: `${everestW}px`, height: `${everestH}px`, flexShrink: 0, overflow: 'hidden' }}>
+                          <img src={mountainImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+                        </div>
+                      );
+                      return (
+                        <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${-everestH / 2}px`, opacity: fillOption === 'everest' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                          <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: `${3 / scaleFactor}px`, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <div style={{ fontSize: `${Math.max(8, 13 / scaleFactor)}px`, fontWeight: 'bold', color: 'white' }}>
+                              × {FILL_COUNTS.everest.toLocaleString()} Mount Everests
+                            </div>
+                            <div style={{ fontSize: `${Math.max(6, 10 / scaleFactor)}px`, color: '#9ca3af', marginTop: `${2 / scaleFactor}px` }}>
+                              the tallest mountain on Earth, standing at 8,849 m
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {[...Array(totalRows)].map((_, row) => (
+                              <div key={row} style={{ display: 'flex', lineHeight: 0 }}>
+                                {[...Array(20)].map((_, i) => <EverestImg key={i} i={i} />)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : currentStep >= 3 ? (
                   // Planet steps 3–9: all 7 slots rendered (future ones invisible to hold gap width).
@@ -408,12 +559,12 @@ const App = () => {
                   top: '8%',
                   left: `${window.innerWidth / 2 - scaleFactor * (totalRowWidthPx / 2 - earthPx / 2)}px`,
                   width: `${scaleFactor * (totalRowWidthPx - earthPx / 2 - moonPx / 2)}px`,
-                  opacity: Math.min(1, (scrollProgress - 0.5) / 0.25),
+                  opacity: Math.min(1, (scrollProgress - 0.5) / 0.2) * Math.max(0, 1 - Math.max(0, (scrollProgress - 0.78) / 0.12)),
                   transition: 'opacity 0.3s ease',
                 }}
               >
                 <div className="text-xs text-gray-400 uppercase tracking-widest mb-3">
-                  Earth → Moon at its farthest
+                  Earth → Moon at its farthest distance
                 </div>
                 <div className="flex items-center">
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
@@ -421,9 +572,6 @@ const App = () => {
                   <div className="px-6 text-3xl font-bold text-white whitespace-nowrap">405,500 km</div>
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
-                </div>
-                <div className="text-sm tracking-wider text-gray-400 mt-3">
-                  Now scroll to see what fits inside this gap.
                 </div>
               </div>
             )}
@@ -440,28 +588,31 @@ const App = () => {
                   transition: 'opacity 0.3s ease',
                 }}
               >
-                <div className="text-xs text-gray-400 uppercase tracking-widerst mb-3">
+                <div className="text-xs text-gray-400 uppercase tracking-widest mb-3">
                   Earth → Moon at its largest distance
                 </div>
                 <div className="flex items-center">
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
-                  <div className="px-6 text-3xl font-bold text-white whitespace-nowrap">405,500 km</div>
+                  <div className="px-6 text-base font-bold text-white whitespace-nowrap">
+                    All {FILL_COUNTS[fillOption].toLocaleString()}{' '}
+                    <select
+                      value={fillOption}
+                      onChange={e => setFillOption(e.target.value)}
+                      className="bg-transparent border-b border-white text-white cursor-pointer outline-none font-bold text-base"
+                    >
+                      <option value="planets">planets</option>
+                      <option value="earths">earths</option>
+                      <option value="moons">moons</option>
+                      <option value="australia">Australias</option>
+                      <option value="everest">Mount Everests</option>
+                      <option value="burj">Burj Khalifas</option>
+                      <option value="whales">blue whales</option>
+                    </select>
+                    {' '}fit side by side in between the Earth and Moon.
+                  </div>
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
-                </div>
-                <div className="text-sm tracking-wider text-gray-400 mt-3">
-                  All {FILL_COUNTS[fillOption]}{' '}
-                  <select
-                    value={fillOption}
-                    onChange={e => setFillOption(e.target.value)}
-                    className="bg-transparent border-b border-gray-400 text-gray-400 cursor-pointer outline-none"
-                  >
-                    <option value="planets">planets</option>
-                    <option value="earths">earths</option>
-                    <option value="moons">moons</option>
-                  </select>
-                  {' '}fit side by side in this gap.
                 </div>
               </div>
             )}
@@ -478,9 +629,10 @@ const App = () => {
                     }}
                   >
                     <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
-                      Here are Earth and the Moon at their true relative sizes — but the distance between them is <span className="font-bold">not</span> to scale yet.
+                      Here are Earth and the Moon, shown at their true relative sizes.
                       <br /><br />
-                      <span className="text-gray-400">Earth: 12,742 km wide &nbsp;·&nbsp; Moon: 3,474 km wide</span>
+                      <span className="text-gray-400">Earth: 12,742 km wide</span><br />
+                      <span className="text-gray-400">Moon: 3,474 km wide</span>
                     </div>
                   </div>
                 )}
@@ -494,9 +646,9 @@ const App = () => {
                     }}
                   >
                     <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-md">
-                      But the real distance between them is <span className="font-bold">405,500 km</span> — far greater than shown here.
+                      But the gap between them here is <span className="font-bold">not</span> accurate.
                       <br /><br />
-                      <span className="text-gray-400">Keep scrolling to see the true scale of that gap.</span>
+                      <span className="text-gray-400">Let's see what the real distance looks like.</span>
                     </div>
                   </div>
                 )}
@@ -508,15 +660,16 @@ const App = () => {
               <div
                 className="absolute left-1/2 text-left"
                 style={{
-                  bottom: `${(scrollProgress - 0.6) * 240 - 20}%`,
+                  bottom: `${(scrollProgress - 0.6) * 380 - 20}%`,
                   transform: 'translateX(-50%)',
                   transition: 'bottom 0.1s linear',
+                  opacity: Math.max(0, 1 - Math.max(0, (scrollProgress - 0.82) / 0.1)),
                 }}
               >
-                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-md">
-                  This is the <span className="font-bold">true scale</span> of the gap between Earth and Moon.
+                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-xl">
+                  This gap is <span className="font-bold">405,500 km</span> wide, further than most people imagine.
                   <br /><br />
-                  <span className="text-gray-400">Now watch as every other planet in the solar system rises up to fill it — one by one.</span>
+                  <span className="text-gray-400">So what could actually fit inside this space?</span>
                 </div>
               </div>
             )}
