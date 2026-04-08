@@ -51,6 +51,7 @@ const App = () => {
   const scrollHintTimerRef = useRef(null);
   const finalStepTextRef = useRef(null);
   const finalStepDivRef = useRef(null);
+  const restartTimerStarted = useRef(false);
 
   // Initialize off-screen before first paint; only when step changes (not on every scrollProgress render)
   useLayoutEffect(() => {
@@ -101,8 +102,9 @@ const App = () => {
   }, [currentStep]);
 
   // Generate stars once and keep them constant
+  // 260 stars spread across a 160vw×160vh container so edges stay filled during zoom-out
   const [stars] = useState(() =>
-    [...Array(100)].map(() => ({
+    [...Array(260)].map(() => ({
       size: Math.random() * 2 + 1,
       top: Math.random() * 100,
       left: Math.random() * 100,
@@ -201,6 +203,23 @@ const App = () => {
     return () => clearTimeout(continueBtnTimer.current);
   }, [currentStep, scrollProgress]); */
 
+  // Reset restart button when leaving the final step
+  useEffect(() => {
+    if (currentStep !== planets.length + 3) {
+      setShowContinueBtn(false);
+      clearTimeout(continueBtnTimer.current);
+      restartTimerStarted.current = false;
+    }
+  }, [currentStep]);
+
+  // Start 5s timer once the final-step distance bar becomes visible (scrollProgress >= 0.30)
+  useEffect(() => {
+    if (currentStep !== planets.length + 3) return;
+    if (scrollProgress >= 0.30 && !restartTimerStarted.current) {
+      restartTimerStarted.current = true;
+      continueBtnTimer.current = setTimeout(() => setShowContinueBtn(true), 5000);
+    }
+  }, [currentStep, scrollProgress]);
 
   // Step 2 is the dedicated "scale reveal" step: Earth & Moon spread to full gap while zooming out.
   // Steps 3–9 are planet steps (planets rise up, no further zoom or spreading).
@@ -279,7 +298,7 @@ const App = () => {
   return (
     <div className="relative bg-black text-white">
       {/* Stationary star background for entire experience */}
-      <div className="fixed inset-0 z-0" style={{ transform: `scale(${Math.pow(scaleFactor, 0.2)})`, transformOrigin: 'center center' }}>
+      <div className="z-0" style={{ position: 'fixed', top: '-30vh', left: '-30vw', width: '160vw', height: '160vh', transform: `scale(${Math.pow(scaleFactor, 0.2)})`, transformOrigin: 'center center' }}>
         {stars.map((star, i) => (
           <div
             key={i}
@@ -711,6 +730,26 @@ const App = () => {
               </div>
             )}
 
+            {/* Restart button — fades in at the end of the final step */}
+            {currentStep === planets.length + 3 && (
+              <div
+                className="fixed bottom-10 right-10 z-30 flex flex-col items-end gap-2"
+                style={{
+                  opacity: showContinueBtn ? 1 : 0,
+                  transition: 'opacity 0.6s ease',
+                  pointerEvents: showContinueBtn ? 'auto' : 'none',
+                }}
+              >
+                <button
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  className="px-6 py-2 border border-gray-700 rounded-full text-sm text-gray-500 tracking-wider hover:border-gray-400 hover:text-gray-300 transition-colors duration-300"
+                  style={{ background: 'rgba(0,0,0,0.7)' }}
+                >
+                  ↺ Restart Experience
+                </button>
+              </div>
+            )}
+
             {/* "Yes!..." scroll-through text box — fixed + raw scroll listener bypasses React renders */}
             {currentStep === planets.length + 3 && (
               <div
@@ -726,12 +765,10 @@ const App = () => {
                 }}
               >
                 <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-xl">
-                  <div className="font-bold text-base mb-2">Yes! All 7 planets!</div>
-                  All 7 planets in our solar system — Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune — lined up side by side, fit entirely within the gap between Earth and the Moon, with room to spare.
+                  <div className="font-bold text-base mb-2">Yes. All 7 planets.</div>
+                  Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune, lined up side by side, can fit entirely within the space between the Earth and the Moon, with room left over.
                   <br /><br />
-                  <span className="text-gray-400">We tend to think of the Moon as close. It's the one thing in the night sky we can reach, the one place beyond Earth that humans have stood. And yet the emptiness between us is almost beyond comprehension.</span>
-                  <br /><br />
-                  <span className="text-gray-400">If space feels big from here, just remember — this is still our backyard.</span>
+                  <span className="text-gray-400">We tend to think of the Moon as close. It is the one place beyond Earth that humans have reached, something that feels almost within our grasp. And yet, the space between us is far larger than we imagine.</span>
                 </div>
               </div>
             )}
@@ -793,8 +830,8 @@ const App = () => {
                     <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
                       Here are Earth and the Moon, shown at their true relative sizes.
                       <br /><br />
-                      <span className="text-gray-400">Earth: 7,918 mi wide</span><br />
-                      <span className="text-gray-400">Moon: 2,159 mi wide</span>
+                      <span className="text-gray-400"><span className="font-bold">Earth:</span> 7,918 miles wide</span><br />
+                      <span className="text-gray-400"><span className="font-bold">Moon:</span> 2,159 miles wide</span>
                     </div>
                   </div>
                 )}
@@ -808,7 +845,7 @@ const App = () => {
                     }}
                   >
                     <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-md">
-                      But the gap between them here is <span className="font-bold">not</span> accurate.
+                      But the gap shown here is <span className="font-bold">not</span> accurate.
                       <br /><br />
                       <span className="text-gray-400">Let's see what the real distance looks like.</span>
                     </div>
@@ -829,10 +866,10 @@ const App = () => {
                   opacity: Math.max(0, 1 - Math.max(0, (scrollProgress - 0.82) / 0.1)),
                 }}
               >
-                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-xl">
-                  This gap is <span className="font-bold">251,966 miles</span> wide, further than most people imagine.
+                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-m">
+                  The real gap is <span className="font-bold">251,966 miles</span> wide, farther than most people imagine.
                   <br /><br />
-                  <span className="text-gray-400">So what could actually fit inside this space?</span>
+                  <span className="text-gray-400">So what could actually fit within this space?</span>
                 </div>
               </div>
             )}
