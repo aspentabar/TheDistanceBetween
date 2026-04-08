@@ -10,7 +10,7 @@ import saturnImage from './assets/saturn.png';
 import uranusImage from './assets/uranus.png';
 import neptuneImage from './assets/neptune.png';
 import whaleImage from './assets/whale.png';
-import burjImage from './assets/burj.png';
+import burjImage from './assets/Burj.png';
 import mountainImage from './assets/mountain.png';
 import africaImage from './assets/Africa.png';
 
