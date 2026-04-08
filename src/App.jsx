@@ -316,7 +316,7 @@ const App = () => {
         ))}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes twinkle {
           0%, 100% { opacity: var(--star-opacity); }
           50% { opacity: 0.1; }
