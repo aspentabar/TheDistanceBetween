@@ -242,7 +242,8 @@ const App = () => {
   const totalPlanetWidthsPx = planets.reduce((sum, p) => sum + p.diameter / KM_PER_PX, 0);
   const totalRowWidthPx = earthPx + (planets.length + 1) * ROW_GAP_PX + totalPlanetWidthsPx + moonPx;
   const wrapperWidthPx = totalPlanetWidthsPx + planets.length * ROW_GAP_PX;
-  const FILL_COUNTS = { planets: 7, earths: 30, moons: Math.floor(405500 / moonDiameter), whales: Math.floor(405500 * 1000 / 30), burj: Math.floor(405500 * 1000 / 828), everest: Math.floor(405500 / 8.849), africa: Math.floor(405500 / 7400) };
+  const AVG_DIST_MI = 238855;
+  const FILL_COUNTS = { planets: 7, earths: Math.floor(AVG_DIST_MI / toMi(earthDiameter)), moons: Math.floor(AVG_DIST_MI / toMi(moonDiameter)), whales: Math.floor(AVG_DIST_MI * 5280 / 98.4), burj: Math.floor(AVG_DIST_MI * 5280 / 2716.5), everest: Math.floor(AVG_DIST_MI * 5280 / 29032), africa: Math.floor(AVG_DIST_MI / toMi(7400)) };
   const moonFillPx = wrapperWidthPx / FILL_COUNTS.moons;
 
   const getFillLayerStyle = (name) => {
