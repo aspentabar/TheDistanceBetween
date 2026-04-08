@@ -725,12 +725,12 @@ const App = () => {
                 }}
               >
                 <div className="text-xs text-gray-400 uppercase tracking-widest mb-3">
-                  Earth → Moon at its farthest distance
+                  Earth → Moon at its average distance
                 </div>
                 <div className="flex items-center">
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
-                  <div className="px-2 sm:px-6 text-base sm:text-3xl font-bold text-white whitespace-nowrap">251,966 miles</div>
+                  <div className="px-2 sm:px-6 text-base sm:text-3xl font-bold text-white whitespace-nowrap">238,855 miles</div>
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
                 </div>
@@ -795,7 +795,7 @@ const App = () => {
                 }}
               >
                 <div className="text-xs text-gray-400 uppercase tracking-widest mb-3">
-                  Earth → Moon at its largest distance
+                  Earth → Moon at its average distance
                 </div>
                 <div className="flex items-center">
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
@@ -874,7 +874,7 @@ const App = () => {
                 }}
               >
                 <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-lg w-[calc(100vw-2rem)]">
-                  The real gap is <span className="font-bold">251,966 miles</span> wide, farther than most people imagine.
+                  The real gap is <span className="font-bold">238,855 miles</span> on average, farther than most people imagine.
                   <br /><br />
                   <span className="text-gray-400">So what could actually fit within this space?</span>
                 </div>
