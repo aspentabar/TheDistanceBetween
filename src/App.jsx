@@ -341,7 +341,7 @@ const App = () => {
         style={{ opacity: titleOpacity }}
       >
         <div className="text-center relative z-10 px-6">
-          <h1 className="text-6xl font-bold mb-4 text-white whitespace-nowrap">The Distance Between</h1>
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-4 text-white">The Distance Between</h1>
           {/* <p className="text-lg text-gray-400 mb-4">by Aspen Tabar</p>
           <br /> */}
           <p className="text-base text-gray-400 leading-relaxed tracking-wider">
@@ -730,7 +730,7 @@ const App = () => {
                 <div className="flex items-center">
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
-                  <div className="px-6 text-3xl font-bold text-white whitespace-nowrap">251,966 miles</div>
+                  <div className="px-2 sm:px-6 text-base sm:text-3xl font-bold text-white whitespace-nowrap">251,966 miles</div>
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
                 </div>
@@ -771,7 +771,7 @@ const App = () => {
                   zIndex: 20,
                 }}
               >
-                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-xl">
+                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-xl w-[calc(100vw-2rem)]">
                   <div className="font-bold text-base mb-2">Yes. All 7 planets.</div>
                   Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune, lined up side by side, can fit entirely within the space between the Earth and the Moon, with room left over.
                   <br /><br />
@@ -800,12 +800,12 @@ const App = () => {
                 <div className="flex items-center">
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
-                  <div className="px-6 text-base font-bold text-white whitespace-nowrap">
+                  <div className="px-2 sm:px-6 text-xs sm:text-base font-bold text-white text-center">
                     All {FILL_COUNTS[fillOption].toLocaleString()}{' '}
                     <select
                       value={fillOption}
                       onChange={e => setFillOption(e.target.value)}
-                      className="bg-transparent border-b border-white text-white cursor-pointer outline-none font-bold text-base"
+                      className="bg-transparent border-b border-white text-white cursor-pointer outline-none font-bold text-xs sm:text-base"
                     >
                       <option value="planets">planets</option>
                       <option value="earths">earths</option>
@@ -828,13 +828,13 @@ const App = () => {
               <>
                 {scrollProgress < 0.5 && (
                   <div
-                    className="absolute right-24 text-left"
+                    className="absolute right-2 sm:right-24 text-left"
                     style={{
                       bottom: `${scrollProgress * 240 - 20}%`,
                       transition: 'bottom 0.1s linear'
                     }}
                   >
-                    <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
+                    <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm w-[calc(100vw-1rem)] sm:w-auto">
                       Here are Earth and the Moon, shown at their true relative sizes.
                       <br /><br />
                       <span className="text-gray-400"><span className="font-bold">Earth:</span> 7,918 miles wide</span><br />
@@ -845,13 +845,13 @@ const App = () => {
 
                 {scrollProgress >= 0.5 && (
                   <div
-                    className="absolute right-24 text-left"
+                    className="absolute right-2 sm:right-24 text-left"
                     style={{
                       bottom: `${(scrollProgress - 0.5) * 240 - 20}%`,
                       transition: 'bottom 0.1s linear'
                     }}
                   >
-                    <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-md">
+                    <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-md w-[calc(100vw-1rem)] sm:w-auto">
                       But the gap shown here is <span className="font-bold">not</span> accurate.
                       <br /><br />
                       <span className="text-gray-400">Let's see what the real distance looks like.</span>
@@ -873,7 +873,7 @@ const App = () => {
                   opacity: Math.max(0, 1 - Math.max(0, (scrollProgress - 0.82) / 0.1)),
                 }}
               >
-                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-m">
+                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-lg w-[calc(100vw-2rem)]">
                   The real gap is <span className="font-bold">251,966 miles</span> wide, farther than most people imagine.
                   <br /><br />
                   <span className="text-gray-400">So what could actually fit within this space?</span>
