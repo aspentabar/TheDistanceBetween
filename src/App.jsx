@@ -144,32 +144,39 @@ const App = () => {
 
   useEffect(() => {
     const scroller = scrollama();
+    let rafId;
 
-    scroller
-      .setup({
-        step: '.step',
-        offset: 0.5,
-        progress: true,
-        debug: false
-      })
-      .onStepEnter((response) => {
-        justEnteredRef.current = true;
-        setCurrentStep(response.index);
-        setScrollProgress(0);
-      })
-      .onStepProgress((response) => {
-        if (justEnteredRef.current) {
-          justEnteredRef.current = false;
-          return;
-        }
-        const p = response.progress;
-        setScrollProgress(p);
-      });
+    const init = () => {
+      scroller
+        .setup({
+          step: '.step',
+          offset: 0.5,
+          progress: true,
+          debug: false
+        })
+        .onStepEnter((response) => {
+          justEnteredRef.current = true;
+          setCurrentStep(response.index);
+          setScrollProgress(0);
+        })
+        .onStepProgress((response) => {
+          if (justEnteredRef.current) {
+            justEnteredRef.current = false;
+            return;
+          }
+          const p = response.progress;
+          setScrollProgress(p);
+        });
+    };
+
+    // Defer setup until after first paint so step elements have non-zero height
+    rafId = requestAnimationFrame(init);
 
     const handleResize = () => { scroller.resize(); };
     window.addEventListener('resize', handleResize);
 
     return () => {
+      cancelAnimationFrame(rafId);
       scroller.destroy();
       window.removeEventListener('resize', handleResize);
     };
