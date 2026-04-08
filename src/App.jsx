@@ -726,7 +726,12 @@ const App = () => {
                 }}
               >
                 <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-xl">
-                  Yes! Every planet in our solar system, placed side by side, fits entirely within the space between the Earth and the Moon.
+                  <div className="font-bold text-base mb-2">Yes! All 7 planets!</div>
+                  All 7 planets in our solar system — Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune — lined up side by side, fit entirely within the gap between Earth and the Moon, with room to spare.
+                  <br /><br />
+                  <span className="text-gray-400">We tend to think of the Moon as close. It's the one thing in the night sky we can reach, the one place beyond Earth that humans have stood. And yet the emptiness between us is almost beyond comprehension.</span>
+                  <br /><br />
+                  <span className="text-gray-400">If space feels big from here, just remember — this is still our backyard.</span>
                 </div>
               </div>
             )}
