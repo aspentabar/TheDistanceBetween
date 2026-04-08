@@ -144,7 +144,7 @@ const App = () => {
 
   useEffect(() => {
     const scroller = scrollama();
-    let rafId;
+    let timerId;
 
     const init = () => {
       scroller
@@ -169,14 +169,14 @@ const App = () => {
         });
     };
 
-    // Defer setup until after first paint so step elements have non-zero height
-    rafId = requestAnimationFrame(init);
+    // Defer setup until after layout is complete so step elements have non-zero height
+    timerId = setTimeout(init, 50);
 
     const handleResize = () => { scroller.resize(); };
     window.addEventListener('resize', handleResize);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
       scroller.destroy();
       window.removeEventListener('resize', handleResize);
     };
@@ -376,7 +376,7 @@ const App = () => {
       {/* Scroll steps */}
       <div ref={scrollerRef} className="relative">
         {/* Title screen - Step 0 (invisible, just for scrolling) */}
-        <div className="step h-screen" />
+        <div className="step" style={{ height: '100vh' }} />
 
         {/* Visualization container */}
         <div className="relative">
