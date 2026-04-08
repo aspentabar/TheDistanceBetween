@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import scrollama from 'scrollama';
 import earthImage from './assets/earth.png';
 import moonImage from './assets/moon.png';
@@ -12,7 +12,9 @@ import neptuneImage from './assets/neptune.png';
 import whaleImage from './assets/whale.png';
 import burjImage from './assets/burj.png';
 import mountainImage from './assets/mountain.png';
-import australiaImage from './assets/Australia.png';
+import africaImage from './assets/Africa.png';
+
+const toMi = km => Math.round(km * 0.621371);
 
 const PlanetLabel = ({ name, diameter, scale, above, opacity = 1 }) => (
   <div
@@ -29,7 +31,7 @@ const PlanetLabel = ({ name, diameter, scale, above, opacity = 1 }) => (
     }}
   >
     <div className="font-bold text-sm">{name}</div>
-    <div className="text-gray-400 text-xs">{diameter.toLocaleString()} km</div>
+    <div className="text-gray-400 text-xs">{toMi(diameter).toLocaleString()} mi</div>
   </div>
 );
 
@@ -37,8 +39,66 @@ const App = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [fillOption, setFillOption] = useState('planets');
+  const [visibleFill, setVisibleFill] = useState('planets');
+  const [fillAnim, setFillAnim] = useState('idle'); // 'idle' | 'exiting' | 'entering'
+  const fillAnimTimer = useRef(null);
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  const [showContinueBtn, setShowContinueBtn] = useState(false);
+  const continueBtnTimer = useRef(null);
+  const conclusionRef = useRef(null);
   const scrollerRef = useRef(null);
   const justEnteredRef = useRef(false);
+  const scrollHintTimerRef = useRef(null);
+  const finalStepTextRef = useRef(null);
+  const finalStepDivRef = useRef(null);
+
+  // Initialize off-screen before first paint; only when step changes (not on every scrollProgress render)
+  useLayoutEffect(() => {
+    if (currentStep === planets.length + 3 && finalStepTextRef.current) {
+      finalStepTextRef.current.style.transform = `translateX(-50%) translateY(${window.innerHeight}px)`;
+    }
+  }, [currentStep]);
+
+  // Raw scroll listener — fully bypasses React renders for smooth animation
+  useEffect(() => {
+    const stepEl = finalStepDivRef.current;
+    if (!stepEl) return;
+    const vh = window.innerHeight;
+    const stepOffsetTop = stepEl.getBoundingClientRect().top + window.scrollY;
+    const stepHeight = stepEl.offsetHeight;
+    let elH = 0;
+    const onScroll = () => {
+      const el = finalStepTextRef.current;
+      if (!el) return;
+      if (!elH) elH = el.offsetHeight;
+      const p = Math.max(0, (window.scrollY + vh * 0.5 - stepOffsetTop) / stepHeight);
+      const yPx = vh - (p / 0.25) * (vh + elH);
+      el.style.transform = `translateX(-50%) translateY(${yPx}px)`;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const show = () => {
+      if (currentStep !== 0) return;
+      setShowScrollHint(true);
+      clearTimeout(scrollHintTimerRef.current);
+      scrollHintTimerRef.current = setTimeout(() => setShowScrollHint(false), 2000);
+    };
+    const hide = () => setShowScrollHint(false);
+    window.addEventListener('mousemove', show);
+    window.addEventListener('click', show);
+    window.addEventListener('touchstart', show);
+    window.addEventListener('scroll', hide, true);
+    return () => {
+      window.removeEventListener('mousemove', show);
+      window.removeEventListener('click', show);
+      window.removeEventListener('touchstart', show);
+      window.removeEventListener('scroll', hide, true);
+      clearTimeout(scrollHintTimerRef.current);
+    };
+  }, [currentStep]);
 
   // Generate stars once and keep them constant
   const [stars] = useState(() =>
@@ -100,7 +160,8 @@ const App = () => {
           justEnteredRef.current = false;
           return;
         }
-        setScrollProgress(response.progress);
+        const p = response.progress;
+        setScrollProgress(p);
       });
 
     const handleResize = () => { scroller.resize(); };
@@ -111,6 +172,35 @@ const App = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  useEffect(() => {
+    if (fillOption === visibleFill) return;
+    setFillAnim('exiting');
+    clearTimeout(fillAnimTimer.current);
+    fillAnimTimer.current = setTimeout(() => {
+      setVisibleFill(fillOption);
+      setFillAnim('entering');
+      fillAnimTimer.current = setTimeout(() => setFillAnim('idle'), 400);
+    }, 350);
+    return () => clearTimeout(fillAnimTimer.current);
+  }, [fillOption]);
+
+  const continueTimerStarted = useRef(false);
+
+  /* useEffect(() => {
+    if (currentStep !== planets.length + 3) {
+      clearTimeout(continueBtnTimer.current);
+      setShowContinueBtn(false);
+      continueTimerStarted.current = false;
+      return;
+    }
+    if (scrollProgress > 0.5 && !continueTimerStarted.current) {
+      continueTimerStarted.current = true;
+      continueBtnTimer.current = setTimeout(() => setShowContinueBtn(true), 5000);
+    }
+    return () => clearTimeout(continueBtnTimer.current);
+  }, [currentStep, scrollProgress]); */
+
 
   // Step 2 is the dedicated "scale reveal" step: Earth & Moon spread to full gap while zooming out.
   // Steps 3–9 are planet steps (planets rise up, no further zoom or spreading).
@@ -126,8 +216,27 @@ const App = () => {
   const totalPlanetWidthsPx = planets.reduce((sum, p) => sum + p.diameter / KM_PER_PX, 0);
   const totalRowWidthPx = earthPx + (planets.length + 1) * ROW_GAP_PX + totalPlanetWidthsPx + moonPx;
   const wrapperWidthPx = totalPlanetWidthsPx + planets.length * ROW_GAP_PX;
-  const FILL_COUNTS = { planets: 7, earths: 30, moons: Math.floor(405500 / moonDiameter), whales: Math.floor(405500 * 1000 / 30), burj: Math.floor(405500 * 1000 / 828), everest: Math.floor(405500 / 8.849), australia: Math.floor(405500 / 4000) };
+  const FILL_COUNTS = { planets: 7, earths: 30, moons: Math.floor(405500 / moonDiameter), whales: Math.floor(405500 * 1000 / 30), burj: Math.floor(405500 * 1000 / 828), everest: Math.floor(405500 / 8.849), africa: Math.floor(405500 / 7400) };
   const moonFillPx = wrapperWidthPx / FILL_COUNTS.moons;
+
+  const getFillLayerStyle = (name) => {
+    const isVisible = visibleFill === name;
+    // const inConclusion = currentStep >= planets.length + 4;
+    // if (inConclusion) return { opacity: 0, transform: 'translateY(0)', transition: 'opacity 1s ease', pointerEvents: 'none' };
+    if (!isVisible) return { opacity: 0, transform: 'translateY(120px)', transition: 'none', pointerEvents: 'none' };
+    if (fillAnim === 'exiting') return { opacity: 0, transform: 'translateY(120px)', transition: 'transform 0.35s ease, opacity 0.35s ease', pointerEvents: 'none' };
+    if (fillAnim === 'entering') return { opacity: 1, transform: 'translateY(0)', transition: 'transform 0.4s ease, opacity 0.4s ease', pointerEvents: 'none' };
+    return { opacity: 1, transform: 'translateY(0)', transition: 'none', pointerEvents: 'none' };
+  };
+  const getFillLayerStyleCentered = (name) => {
+    const isVisible = visibleFill === name;
+    // const inConclusion = currentStep >= planets.length + 4;
+    // if (inConclusion) return { opacity: 0, transform: 'translateY(-50%)', transition: 'opacity 1s ease', pointerEvents: 'none' };
+    if (!isVisible) return { opacity: 0, transform: 'translateY(calc(-50% + 120px))', transition: 'none', pointerEvents: 'none' };
+    if (fillAnim === 'exiting') return { opacity: 0, transform: 'translateY(calc(-50% + 120px))', transition: 'transform 0.35s ease, opacity 0.35s ease', pointerEvents: 'none' };
+    if (fillAnim === 'entering') return { opacity: 1, transform: 'translateY(-50%)', transition: 'transform 0.4s ease, opacity 0.4s ease', pointerEvents: 'none' };
+    return { opacity: 1, transform: 'translateY(-50%)', transition: 'none', pointerEvents: 'none' };
+  };
 
   const smoothstep = x => x * x * (3 - 2 * x);
   const t = Math.min(scrollProgress * 2, 1);
@@ -199,6 +308,7 @@ const App = () => {
         }
       `}</style>
 
+
       {/* Fixed title screen that fades out */}
       <div
         className="fixed inset-0 flex items-center justify-center pointer-events-none z-40 transition-opacity duration-500"
@@ -211,11 +321,25 @@ const App = () => {
           <p className="text-base text-gray-400 leading-relaxed tracking-wider">
             The Moon is our closest neighbor in space, but how far away is it, really?
           </p>
-          <div className="mt-12 text-4xl text-gray-500 animate-bounce">
-            ↓
+          <div className="mt-12 flex flex-col items-center gap-2">
+            <div className="text-4xl text-gray-500 animate-bounce">↓</div>
+            <p className="text-xs text-gray-600 uppercase tracking-widest transition-opacity duration-300" style={{ opacity: showScrollHint ? 1 : 0, fontSize: '0.6rem' }}>scroll to explore</p>
           </div>
         </div>
       </div>
+
+      {/* Continue button */}
+      {/* <div
+        className="fixed bottom-8 right-8 z-50 transition-opacity duration-700"
+        style={{ opacity: showContinueBtn ? 1 : 0, pointerEvents: showContinueBtn ? 'auto' : 'none' }}
+      >
+        <button
+          onClick={() => conclusionRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          className="flex items-center gap-2 text-white border border-white border-opacity-40 rounded-full px-5 py-2 text-xs uppercase tracking-widest hover:bg-white hover:bg-opacity-10 transition-colors"
+        >
+          continue <span className="text-lg">→</span>
+        </button>
+      </div> */}
 
       {/* Fixed horizontal line that fades in */}
       <div
@@ -266,8 +390,8 @@ const App = () => {
                 </div>
 
                 {/* Planets in between */}
-                {currentStep === planets.length + 3 ? (
-                  // Final step: all planets with fill-option crossfade
+                {currentStep >= planets.length + 3 ? (
+                  // Final step + conclusion steps: all planets with fill-option crossfade
                   <div
                     style={{
                       position: 'relative',
@@ -278,7 +402,7 @@ const App = () => {
                     }}
                   >
                     {/* Planets layer */}
-                    <div style={{ display: 'flex', alignItems: 'center', height: '100%', opacity: fillOption === 'planets' ? 1 : 0, transition: 'opacity 0.6s ease' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', height: '100%', ...getFillLayerStyle('planets') }}>
                       {planets.map((planet) => {
                         const planetWidthPx = planet.diameter / KM_PER_PX;
                         return (
@@ -294,7 +418,7 @@ const App = () => {
                       })}
                     </div>
                     {/* Earths layer */}
-                    <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', opacity: fillOption === 'earths' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                    <div style={{ position: 'absolute', left: 0, top: '50%', display: 'flex', alignItems: 'center', ...getFillLayerStyleCentered('earths') }}>
                       {[...Array(30)].map((_, i) => (
                         <div key={i} style={{ width: `${earthPx}px`, height: `${earthPx}px`, marginLeft: i === 0 ? `${ROW_GAP_PX}px` : '1px', flexShrink: 0 }}>
                           <img src={earthImage} alt="" className="rounded-full w-full h-full" style={{ objectFit: 'cover' }} />
@@ -302,7 +426,7 @@ const App = () => {
                       ))}
                     </div>
                     {/* Moons layer */}
-                    <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', opacity: fillOption === 'moons' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                    <div style={{ position: 'absolute', left: 0, top: '50%', display: 'flex', alignItems: 'center', ...getFillLayerStyleCentered('moons') }}>
                       {[...Array(FILL_COUNTS.moons)].map((_, i) => (
                         <div key={i} style={{ width: `${moonFillPx}px`, height: `${moonFillPx}px`, flexShrink: 0 }}>
                           <img src={moonImage} alt="" className="rounded-full w-full h-full" style={{ objectFit: 'cover' }} />
@@ -312,13 +436,13 @@ const App = () => {
 
                     {/* Whales layer */}
                     {(() => {
-                      const whaleW = wrapperWidthPx / 30;
+                      const whaleW = wrapperWidthPx / 15;
                       const whaleH = whaleW * 0.4;
                       const extraRows = 80;
                       return (
                         <>
                           {/* Centered single row with text above */}
-                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', transform: 'translateY(-50%)', opacity: fillOption === 'whales' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', ...getFillLayerStyleCentered('whales') }}>
                             <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: `${3 / scaleFactor}px`, textAlign: 'center', whiteSpace: 'nowrap' }}>
                               <div style={{ fontSize: `${Math.max(8, 13 / scaleFactor)}px`, fontWeight: 'bold', color: 'white' }}>
                                 × {FILL_COUNTS.whales.toLocaleString()} blue whales
@@ -328,17 +452,17 @@ const App = () => {
                               </div>
                             </div>
                             <div style={{ display: 'flex' }}>
-                              {[...Array(30)].map((_, i) => (
+                              {[...Array(15)].map((_, i) => (
                                 <img key={i} src={whaleImage} alt="" style={{ width: `${whaleW}px`, height: `${whaleH}px`, objectFit: 'contain', flexShrink: 0 }} />
                               ))}
                             </div>
                           </div>
                           {/* Extra rows cascading downward off screen */}
-                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${whaleH / 2}px`, opacity: fillOption === 'whales' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${whaleH / 2}px`, width: `${wrapperWidthPx}px`, overflow: 'hidden', ...getFillLayerStyle('whales') }}>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                               {[...Array(extraRows)].map((_, row) => (
                                 <div key={row} style={{ display: 'flex' }}>
-                                  {[...Array(30)].map((_, i) => (
+                                  {[...Array(15)].map((_, i) => (
                                     <img key={i} src={whaleImage} alt="" style={{ width: `${whaleW}px`, height: `${whaleH}px`, objectFit: 'contain', flexShrink: 0 }} />
                                   ))}
                                 </div>
@@ -362,7 +486,7 @@ const App = () => {
                       return (
                         <>
                           {/* Centered single row with text above */}
-                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', transform: 'translateY(-50%)', opacity: fillOption === 'burj' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', ...getFillLayerStyleCentered('burj') }}>
                             <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: `${3 / scaleFactor}px`, textAlign: 'center', whiteSpace: 'nowrap' }}>
                               <div style={{ fontSize: `${Math.max(8, 13 / scaleFactor)}px`, fontWeight: 'bold', color: 'white' }}>
                                 × {FILL_COUNTS.burj.toLocaleString()} Burj Khalifas
@@ -376,7 +500,7 @@ const App = () => {
                             </div>
                           </div>
                           {/* Extra rows cascading downward off screen */}
-                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${burjH / 2}px`, opacity: fillOption === 'burj' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                          <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${burjH / 2}px`, ...getFillLayerStyle('burj') }}>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                               {[...Array(extraRows)].map((_, row) => (
                                 <div key={row} style={{ display: 'flex' }}>
@@ -389,38 +513,17 @@ const App = () => {
                       );
                     })()}
 
-                    {/* Australia layer */}
+                    {/* Africa layer */}
                     {(() => {
-                      const perRow = 15;
-                      const total = FILL_COUNTS.australia;
-                      const australiaW = wrapperWidthPx / perRow;
-                      const australiaH = australiaW * 0.9;
-                      const rows = [];
-                      for (let i = 0; i < total; i += perRow) {
-                        rows.push([...Array(Math.min(perRow, total - i))].map((_, j) => i + j));
-                      }
-                      const AustraliaImg = ({ idx }) => (
-                        <div key={idx} style={{ width: `${australiaW}px`, height: `${australiaH}px`, flexShrink: 0, overflow: 'hidden' }}>
-                          <img src={australiaImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
-                        </div>
-                      );
+                      const africaFillPx = wrapperWidthPx / FILL_COUNTS.africa;
+                      const africaH = africaFillPx * 1.2;
                       return (
-                        <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${-australiaH / 2}px`, opacity: fillOption === 'australia' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
-                          <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: `${3 / scaleFactor}px`, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                            <div style={{ fontSize: `${Math.max(8, 13 / scaleFactor)}px`, fontWeight: 'bold', color: 'white' }}>
-                              × {FILL_COUNTS.australia.toLocaleString()} Australias
+                        <div style={{ position: 'absolute', left: 0, top: '50%', display: 'flex', alignItems: 'center', ...getFillLayerStyleCentered('africa') }}>
+                          {[...Array(FILL_COUNTS.africa)].map((_, i) => (
+                            <div key={i} style={{ width: `${africaFillPx}px`, height: `${africaH}px`, flexShrink: 0, overflow: 'hidden' }}>
+                              <img src={africaImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.6)', transformOrigin: 'center center' }} />
                             </div>
-                            <div style={{ fontSize: `${Math.max(6, 10 / scaleFactor)}px`, color: '#9ca3af', marginTop: `${2 / scaleFactor}px` }}>
-                              the world's largest island, ~4,000 km wide
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            {rows.map((rowItems, row) => (
-                              <div key={row} style={{ display: 'flex', lineHeight: 0 }}>
-                                {rowItems.map(idx => <AustraliaImg key={idx} idx={idx} />)}
-                              </div>
-                            ))}
-                          </div>
+                          ))}
                         </div>
                       );
                     })()}
@@ -436,7 +539,7 @@ const App = () => {
                         </div>
                       );
                       return (
-                        <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${-everestH / 2}px`, opacity: fillOption === 'everest' ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+                        <div style={{ position: 'absolute', left: `${ROW_GAP_PX}px`, top: '50%', marginTop: `${-everestH / 2}px`, ...getFillLayerStyle('everest') }}>
                           <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: `${3 / scaleFactor}px`, textAlign: 'center', whiteSpace: 'nowrap' }}>
                             <div style={{ fontSize: `${Math.max(8, 13 / scaleFactor)}px`, fontWeight: 'bold', color: 'white' }}>
                               × {FILL_COUNTS.everest.toLocaleString()} Mount Everests
@@ -521,6 +624,38 @@ const App = () => {
                 </div>
               </div>
 
+              {/* Conclusion dashed line — grows across full gap as user scrolls */}
+              {/* {currentStep >= planets.length + 4 && (() => {
+                const fullDelta = totalRowWidthPx - earthPx / 2;
+                const progress = smoothstep(Math.min(1, scrollProgress / 0.55));
+                return (
+                  <svg
+                    style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      width: `${totalRowWidthPx}px`,
+                      height: '4px',
+                      overflow: 'visible',
+                      pointerEvents: 'none',
+                      zIndex: 30,
+                      transform: `translate(-50%, -50%) scale(${scaleFactor})`
+                    }}
+                  >
+                    <line
+                      x1={earthPx / 2}
+                      y1="2"
+                      x2={earthPx / 2 + fullDelta * progress}
+                      y2="2"
+                      stroke="white"
+                      strokeOpacity="0.7"
+                      strokeWidth={2 / scaleFactor}
+                      strokeDasharray={`${10 / scaleFactor} ${10 / scaleFactor}`}
+                    />
+                  </svg>
+                );
+              })()} */}
+
               {/* Dashed line from Earth center to Moon center */}
               {currentStep === 1 && scrollProgress > 0.3 && (
                 <svg
@@ -569,23 +704,45 @@ const App = () => {
                 <div className="flex items-center">
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
-                  <div className="px-6 text-3xl font-bold text-white whitespace-nowrap">405,500 km</div>
+                  <div className="px-6 text-3xl font-bold text-white whitespace-nowrap">251,966 miles</div>
                   <div style={{ flex: 1, height: '2px', background: 'white' }} />
                   <div style={{ width: '2px', height: '20px', background: 'white' }} />
                 </div>
               </div>
             )}
 
+            {/* "Yes!..." scroll-through text box — fixed + raw scroll listener bypasses React renders */}
+            {currentStep === planets.length + 3 && (
+              <div
+                ref={finalStepTextRef}
+                style={{
+                  position: 'fixed',
+                  left: '50%',
+                  top: 0,
+                  willChange: 'transform',
+                  transition: 'transform 0.1s linear',
+                  pointerEvents: 'none',
+                  zIndex: 20,
+                }}
+              >
+                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-xl">
+                  Yes! Every planet in our solar system, placed side by side, fits entirely within the space between the Earth and the Moon.
+                </div>
+              </div>
+            )}
+
             {/* Distance bar — final aha moment */}
-            {currentStep === planets.length + 3 && scrollProgress > 0.4 && (
+            {currentStep >= planets.length + 3 && (
               <div
                 className="absolute text-center"
                 style={{
                   top: '8%',
                   left: `${window.innerWidth / 2 - scaleFactor * (totalRowWidthPx / 2 - earthPx / 2)}px`,
                   width: `${scaleFactor * (totalRowWidthPx - earthPx / 2 - moonPx / 2)}px`,
-                  opacity: Math.min(1, (scrollProgress - 0.4) / 0.3),
-                  transition: 'opacity 0.3s ease',
+                  opacity: currentStep === planets.length + 3
+                    ? Math.max(0, Math.min(1, (scrollProgress - 0.30) / 0.1))
+                    : 1,
+                  transition: 'opacity 0.15s ease',
                 }}
               >
                 <div className="text-xs text-gray-400 uppercase tracking-widest mb-3">
@@ -604,9 +761,9 @@ const App = () => {
                       <option value="planets">planets</option>
                       <option value="earths">earths</option>
                       <option value="moons">moons</option>
-                      <option value="australia">Australias</option>
-                      <option value="everest">Mount Everests</option>
-                      <option value="burj">Burj Khalifas</option>
+                      <option value="africa">africas</option>
+                      {/* <option value="everest">Mount Everests</option> */}
+                      {/* <option value="burj">Burj Khalifas</option> */}
                       <option value="whales">blue whales</option>
                     </select>
                     {' '}fit side by side in between the Earth and Moon.
@@ -631,8 +788,8 @@ const App = () => {
                     <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-sm">
                       Here are Earth and the Moon, shown at their true relative sizes.
                       <br /><br />
-                      <span className="text-gray-400">Earth: 12,742 km wide</span><br />
-                      <span className="text-gray-400">Moon: 3,474 km wide</span>
+                      <span className="text-gray-400">Earth: 7,918 mi wide</span><br />
+                      <span className="text-gray-400">Moon: 2,159 mi wide</span>
                     </div>
                   </div>
                 )}
@@ -656,6 +813,7 @@ const App = () => {
             )}
 
             {/* Step 2 text box — appears after gap is fully spread */}
+
             {currentStep === 2 && spreadToFullProgress >= 1 && scrollProgress > 0.6 && (
               <div
                 className="absolute left-1/2 text-left"
@@ -667,7 +825,7 @@ const App = () => {
                 }}
               >
                 <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-xl">
-                  This gap is <span className="font-bold">405,500 km</span> wide, further than most people imagine.
+                  This gap is <span className="font-bold">251,966 miles</span> wide, further than most people imagine.
                   <br /><br />
                   <span className="text-gray-400">So what could actually fit inside this space?</span>
                 </div>
@@ -687,7 +845,10 @@ const App = () => {
           ))}
 
           {/* Final step */}
-          <div className="step" style={{ height: '200vh' }} />
+          <div ref={finalStepDivRef} className="step" style={{ height: '350vh' }} />
+
+          {/* Conclusion step */}
+          {/* <div ref={conclusionRef} className="step" style={{ height: '300vh' }} /> */}
         </div>
       </div>
     </div>
