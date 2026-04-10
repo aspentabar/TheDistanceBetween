@@ -9,7 +9,7 @@ An interactive scrollytelling visualization that reveals just how vast the space
 As you scroll, the experience unfolds in stages:
 
 1. **Earth & Moon** — Earth and the Moon appear at their true relative sizes, with a dashed line and the distance between them labeled.
-2. **The Real Scale** — The scene zooms out to show the actual 251,966-mile gap, far larger than most people imagine.
+2. **The Real Scale** — The scene zooms out to show the actual 238,855-mile gap, far larger than most people imagine.
 3. **The Planets Enter** — One by one, Mercury through Neptune rise into the gap, each rendered to true relative scale.
 4. **The Reveal** — All seven planets fit, side by side, in the space between Earth and the Moon — with room left over.
 
@@ -22,21 +22,9 @@ After the reveal, a closing reflection fades in and a "Restart Experience" butto
 - [Scrollama](https://github.com/russellsamora/scrollama) — scroll-driven step events and progress tracking
 - [Tailwind CSS](https://tailwindcss.com/) — utility-first styling
 
-## Running Locally
+## View It Live
 
-```bash
-npm install
-npm run dev
-```
-
-Then open [http://localhost:5173](http://localhost:5173) in your browser.
-
-## Build
-
-```bash
-npm run build
-npm run preview
-```
+[thedistancebetween.space](http://thedistancebetween.space/)
 
 ## How It Works
 
@@ -46,5 +34,5 @@ The star background is an oversized fixed container (160vw × 160vh) so that whe
 
 ## Data
 
-- Earth–Moon distance: **251,966 miles** (apogee / farthest point)
+- Earth–Moon distance: **238,855 miles** (average distance)
 - All planet diameters are real values in km
