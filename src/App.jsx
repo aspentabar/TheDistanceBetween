@@ -874,7 +874,7 @@ const App = () => {
                   opacity: Math.max(0, 1 - Math.max(0, (scrollProgress - 0.82) / 0.1)),
                 }}
               >
-                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-lg w-[calc(100vw-2rem)]">
+                <div className="text-sm tracking-wider text-white bg-black bg-opacity-80 p-4 rounded-lg border border-gray-700 max-w-md w-[calc(100vw-2rem)]">
                   The real gap is <span className="font-bold">238,855 miles</span> on average, farther than most people imagine.
                   <br /><br />
                   <span className="text-gray-400">So what could actually fit within this space?</span>
